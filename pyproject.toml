@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quacs-parameterization"
+version = "0.1.0"
+description = "Collecting python scripts that demonstrate and test quacs parameterizations"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

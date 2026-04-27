@@ -10,10 +10,9 @@ NOTE: this file is a work in progress. The mechanism definition below
 contains a placeholder reaction ("A") that is not yet fully implemented.
 """
 
-import numpy as np
-
 import musica
 import musica.mechanism_configuration as mc
+import numpy as np
 
 from quacs.drydep.simple.box_model import DEFAULT_MET, XMW, compute_drydep_rate
 
@@ -24,7 +23,7 @@ dvel_cms, k_drydep = compute_drydep_rate(box_height_m=BOX_HEIGHT_M)
 
 print(f"Dry deposition velocity:  {dvel_cms:.4f} cm s⁻¹")
 print(f"First-order loss rate k:  {k_drydep:.4e} s⁻¹  (H = {BOX_HEIGHT_M} m)")
-print(f"Hg0 e-folding lifetime:   {1/k_drydep:.1f} s  ({1/k_drydep/60:.1f} min)")
+print(f"Hg0 e-folding lifetime:   {1 / k_drydep:.1f} s  ({1 / k_drydep / 60:.1f} min)")
 
 
 # ── 2. MUSICA mechanism ───────────────────────────────────────────────────────
@@ -86,4 +85,4 @@ Hg0_ng_m3 = Hg0_concs * XMW * 1e12  # mol/m³ → ng/m³
 print(f"\n{'Time (s)':>10}  {'Time (min)':>10}  {'Hg0 (ng/m3)':>14}  {'Fraction':>10}")
 print("-" * 50)
 for t, c, ng in zip(times, Hg0_concs, Hg0_ng_m3):
-    print(f"{t:10.1f}  {t/60:10.2f}  {ng:14.6f}  {c/Hg0_init_mol_m3:10.6f}")
+    print(f"{t:10.1f}  {t / 60:10.2f}  {ng:14.6f}  {c / Hg0_init_mol_m3:10.6f}")

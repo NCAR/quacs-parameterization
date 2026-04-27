@@ -6,14 +6,12 @@ sweep of the full physically-relevant parameter space.  Agreement must be
 within round-off tolerances (rel=1e-10 throughout).
 """
 
-import numpy as np
 import pytest
 from scipy.stats import qmc
 
 from quacs.drydep.lhs import olson_land_cover
-from quacs.drydep.lhs.box_model import DrydepCoefficients, LandCoverPatch, _patches_to_depvel_arrays
+from quacs.drydep.lhs.box_model import _patches_to_depvel_arrays
 from quacs.drydep.lhs.drydep_physics import (
-    MetVars,
     _light_correction,
     calc_met_vars,
     deposition_velocity,
@@ -26,7 +24,9 @@ from quacs.drydep.lhs.lhs_config import (
     N_LC_ARCHETYPES,
     build_patches_from_sample,
 )
-from quacs.drydep.lhs.species import hg0 as HG0_SPECIES, o3 as O3_SPECIES, so2 as SO2_SPECIES
+from quacs.drydep.lhs.species import hg0 as HG0_SPECIES
+from quacs.drydep.lhs.species import o3 as O3_SPECIES
+from quacs.drydep.lhs.species import so2 as SO2_SPECIES
 from quacs.drydep.simple.drydep_functions import BIOFIT, DEPVEL, DIFFG, GET_OBK, METERO
 
 # ── LHS sample generation ────────────────────────────────────────────────────
@@ -39,11 +39,7 @@ _N_FRAC = N_LC_ARCHETYPES
 _N_LAI = N_LC_ARCHETYPES
 _NDIM_LHS = _N_MET + _N_FRAC + _N_LAI
 
-_L = (
-    [d[1] for d in MET_DIMS]
-    + [0.01] * _N_FRAC
-    + [lc[1] for lc in LC_ARCHETYPES]
-)
+_L = [d[1] for d in MET_DIMS] + [0.01] * _N_FRAC + [lc[1] for lc in LC_ARCHETYPES]
 _U = (
     [d[2] for d in MET_DIMS]
     + [1.0] * _N_FRAC
@@ -55,16 +51,15 @@ _raw = _sampler.random(n=_N_SAMPLES)
 _scaled = qmc.scale(_raw, _L, _U)
 
 _met_samples = _scaled[:, :_N_MET]
-_frac_samples = _scaled[:, _N_MET: _N_MET + _N_FRAC]
-_lai_samples = _scaled[:, _N_MET + _N_FRAC:]
+_frac_samples = _scaled[:, _N_MET : _N_MET + _N_FRAC]
+_lai_samples = _scaled[:, _N_MET + _N_FRAC :]
 
 _met_dicts = [
     {name: float(_met_samples[i, j]) for j, (name, *_) in enumerate(MET_DIMS)}
     for i in range(_N_SAMPLES)
 ]
 _patch_lists = [
-    build_patches_from_sample(_frac_samples[i], _lai_samples[i])
-    for i in range(_N_SAMPLES)
+    build_patches_from_sample(_frac_samples[i], _lai_samples[i]) for i in range(_N_SAMPLES)
 ]
 
 _COEFF = olson_land_cover.coefficients
@@ -74,17 +69,43 @@ _SPECIES = [HG0_SPECIES, SO2_SPECIES, O3_SPECIES]
 
 def _old_depvel(m, patches, sp):
     CZ1, LSNOW, OBK, _ = METERO(
-        m["BXHEIGHT"], m["ALBD"], m["TC0"], m["USTAR"],
-        m["AIRDEN"], m["HFLUX"], m["U10M"], m["V10M"],
+        m["BXHEIGHT"],
+        m["ALBD"],
+        m["TC0"],
+        m["USTAR"],
+        m["AIRDEN"],
+        m["HFLUX"],
+        m["U10M"],
+        m["V10M"],
     )
-    (IREG, ILAND, IUSE, XLAI,
-     idep, iri, irlu, irac, irgss, irgso, ircls, irclo) = _patches_to_depvel_arrays(patches)
+    (IREG, ILAND, IUSE, XLAI, idep, iri, irlu, irac, irgss, irgso, ircls, irclo) = (
+        _patches_to_depvel_arrays(patches)
+    )
     return DEPVEL(
-        _DRYCOEFF, _COEFF.iolson,
-        idep, iri, irlu, irac, irgss, irgso, ircls, irclo,
-        IREG, ILAND, IUSE, m["TC0"],
-        XLAI, LSNOW, m["RADIAT"], m["CFRAC"], m["SUNCOS_MID"],
-        m["PRESSU"], m["USTAR"], m["AZO"], CZ1, OBK,
+        _DRYCOEFF,
+        _COEFF.iolson,
+        idep,
+        iri,
+        irlu,
+        irac,
+        irgss,
+        irgso,
+        ircls,
+        irclo,
+        IREG,
+        ILAND,
+        IUSE,
+        m["TC0"],
+        XLAI,
+        LSNOW,
+        m["RADIAT"],
+        m["CFRAC"],
+        m["SUNCOS_MID"],
+        m["PRESSU"],
+        m["USTAR"],
+        m["AZO"],
+        CZ1,
+        OBK,
         sp.molecular_weight_kg_mol,
         float(sp.other_properties["reactivity"]),
         float(sp.other_properties["henrys_law_constant"]),
@@ -93,8 +114,14 @@ def _old_depvel(m, patches, sp):
 
 def _new_depvel(m, patches, sp):
     mv = calc_met_vars(
-        m["BXHEIGHT"], m["ALBD"], m["TC0"], m["USTAR"],
-        m["AIRDEN"], m["HFLUX"], m["U10M"], m["V10M"],
+        m["BXHEIGHT"],
+        m["ALBD"],
+        m["TC0"],
+        m["USTAR"],
+        m["AIRDEN"],
+        m["HFLUX"],
+        m["U10M"],
+        m["V10M"],
     )
     return deposition_velocity(
         patches,
@@ -117,6 +144,7 @@ def _new_depvel(m, patches, sp):
 
 # ── Tests ────────────────────────────────────────────────────────────────────
 
+
 class TestMoninObukhovLength:
     def test_lhs_sweep(self):
         for m in _met_dicts:
@@ -134,12 +162,24 @@ class TestCalcMetVars:
     def test_lhs_sweep(self):
         for m in _met_dicts:
             old_cz1, old_snow, old_obk, old_w10 = METERO(
-                m["BXHEIGHT"], m["ALBD"], m["TC0"], m["USTAR"],
-                m["AIRDEN"], m["HFLUX"], m["U10M"], m["V10M"],
+                m["BXHEIGHT"],
+                m["ALBD"],
+                m["TC0"],
+                m["USTAR"],
+                m["AIRDEN"],
+                m["HFLUX"],
+                m["U10M"],
+                m["V10M"],
             )
             mv = calc_met_vars(
-                m["BXHEIGHT"], m["ALBD"], m["TC0"], m["USTAR"],
-                m["AIRDEN"], m["HFLUX"], m["U10M"], m["V10M"],
+                m["BXHEIGHT"],
+                m["ALBD"],
+                m["TC0"],
+                m["USTAR"],
+                m["AIRDEN"],
+                m["HFLUX"],
+                m["U10M"],
+                m["V10M"],
             )
             assert mv.cz1 == pytest.approx(old_cz1, rel=1e-10)
             assert mv.is_snow == bool(old_snow)
@@ -195,14 +235,11 @@ class TestDepositionVelocity:
             old = _old_depvel(m, patches, sp)
             new = _new_depvel(m, patches, sp)
             assert new == pytest.approx(old, rel=1e-8), (
-                f"Mismatch at sample {i} species={sp.name}: "
-                f"old={old:.6f}  new={new:.6f}"
+                f"Mismatch at sample {i} species={sp.name}: old={old:.6f}  new={new:.6f}"
             )
 
     def test_snow_cover_lhs_sweep(self):
-        snow_samples = [
-            (m, p) for m, p in zip(_met_dicts, _patch_lists) if m["ALBD"] > 0.4
-        ]
+        snow_samples = [(m, p) for m, p in zip(_met_dicts, _patch_lists) if m["ALBD"] > 0.4]
         assert len(snow_samples) > 0, "No snow samples — increase N or widen ALBD range"
         for m, patches in snow_samples:
             old = _old_depvel(m, patches, HG0_SPECIES)

@@ -39,26 +39,26 @@ Levine (1988) ch. 15
 """
 
 from itertools import combinations_with_replacement
-from typing import NamedTuple, List
+from typing import NamedTuple
 
 import numpy as np
 
-
 # ── Physical constants ────────────────────────────────────────────────────────
 
-_VON_KARMAN = 0.4          # Von Kármán constant
-_CP_AIR     = 1000.0       # specific heat of air at const. pressure (J kg⁻¹ K⁻¹)
-_G0         = 9.80665      # gravitational acceleration (m s⁻²)
-_MW_AIR     = 28.8e-3      # molar mass of moist air (kg mol⁻¹)
-_R          = 8.3144598    # molar gas constant (J K⁻¹ mol⁻¹)
-_AVO        = 6.022140857e23  # Avogadro's number (mol⁻¹)
-_MW_WATER   = 18.016e-3    # molar mass of water (kg mol⁻¹)
-_R_AIR      = 1.2e-10      # radius of an air molecule (m)
-_R_X        = 1.5e-10      # radius of a generic trace-gas molecule (m)
-_D_AIR      = 0.2e-4       # thermal diffusivity of air (m² s⁻¹)
+_VON_KARMAN = 0.4  # Von Kármán constant
+_CP_AIR = 1000.0  # specific heat of air at const. pressure (J kg⁻¹ K⁻¹)
+_G0 = 9.80665  # gravitational acceleration (m s⁻²)
+_MW_AIR = 28.8e-3  # molar mass of moist air (kg mol⁻¹)
+_R = 8.3144598  # molar gas constant (J K⁻¹ mol⁻¹)
+_AVO = 6.022140857e23  # Avogadro's number (mol⁻¹)
+_MW_WATER = 18.016e-3  # molar mass of water (kg mol⁻¹)
+_R_AIR = 1.2e-10  # radius of an air molecule (m)
+_R_X = 1.5e-10  # radius of a generic trace-gas molecule (m)
+_D_AIR = 0.2e-4  # thermal diffusivity of air (m² s⁻¹)
 
 
 # ── MetVars namedtuple ────────────────────────────────────────────────────────
+
 
 class MetVars(NamedTuple):
     """Derived meteorological quantities for the deposition scheme.
@@ -74,6 +74,7 @@ class MetVars(NamedTuple):
     wind10 : float
         10-m wind speed magnitude (m s⁻¹).
     """
+
     cz1: float
     is_snow: bool
     obk: float
@@ -82,8 +83,8 @@ class MetVars(NamedTuple):
 
 # ── monin_obukhov_length ──────────────────────────────────────────────────────
 
-def monin_obukhov_length(ts: float, ustar: float,
-                          airden: float, hflux: float) -> float:
+
+def monin_obukhov_length(ts: float, ustar: float, airden: float, hflux: float) -> float:
     """Monin-Obukhov length (m).
 
     Parameters
@@ -103,16 +104,24 @@ def monin_obukhov_length(ts: float, ustar: float,
         Monin-Obukhov length in metres.
     """
     _hflux = hflux if hflux != 0.0 else 1e-20
-    numerator   = -airden * _CP_AIR * ts * ustar ** 3
+    numerator = -airden * _CP_AIR * ts * ustar**3
     denominator = _VON_KARMAN * _G0 * _hflux
     return numerator / denominator
 
 
 # ── calc_met_vars ─────────────────────────────────────────────────────────────
 
-def calc_met_vars(box_height: float, albedo: float, ts: float,
-                  ustar: float, airden: float, hflux: float,
-                  u10m: float, v10m: float) -> MetVars:
+
+def calc_met_vars(
+    box_height: float,
+    albedo: float,
+    ts: float,
+    ustar: float,
+    airden: float,
+    hflux: float,
+    u10m: float,
+    v10m: float,
+) -> MetVars:
     """Derive meteorological variables needed by the dry deposition scheme.
 
     Parameters
@@ -139,17 +148,17 @@ def calc_met_vars(box_height: float, albedo: float, ts: float,
     MetVars
         Named tuple with fields ``cz1``, ``is_snow``, ``obk``, ``wind10``.
     """
-    cz1    = box_height / 2.0
+    cz1 = box_height / 2.0
     is_snow = bool(albedo > 0.4)
-    obk    = monin_obukhov_length(ts, ustar, airden, hflux)
-    wind10 = float(np.sqrt(u10m ** 2 + v10m ** 2))
+    obk = monin_obukhov_length(ts, ustar, airden, hflux)
+    wind10 = float(np.sqrt(u10m**2 + v10m**2))
     return MetVars(cz1=cz1, is_snow=is_snow, obk=obk, wind10=wind10)
 
 
 # ── molecular_diffusivity ─────────────────────────────────────────────────────
 
-def molecular_diffusivity(temp_k: float, pressure: float,
-                           mol_weight: float) -> float:
+
+def molecular_diffusivity(temp_k: float, pressure: float, mol_weight: float) -> float:
     """Molecular diffusivity of a trace gas in air (m² s⁻¹).
 
     Follows equations 8.5 and 8.9 of Seinfeld (1986) and 15.47 of
@@ -169,13 +178,11 @@ def molecular_diffusivity(temp_k: float, pressure: float,
     float
         Diffusivity in m² s⁻¹.
     """
-    air_number_density = pressure * _AVO / (_R * temp_k)   # molec m⁻³
+    air_number_density = pressure * _AVO / (_R * temp_k)  # molec m⁻³
     collision_diameter = _R_X + _R_AIR
-    mass_ratio  = mol_weight / _MW_AIR                      # dimensionless
+    mass_ratio = mol_weight / _MW_AIR  # dimensionless
     mean_free_path = 1.0 / (
-        np.pi * np.sqrt(1.0 + mass_ratio)
-        * air_number_density
-        * collision_diameter ** 2
+        np.pi * np.sqrt(1.0 + mass_ratio) * air_number_density * collision_diameter**2
     )
     mean_speed = np.sqrt(8.0 * _R * temp_k / (np.pi * mol_weight))
     return (3.0 * np.pi / 32.0) * (1.0 + mass_ratio) * mean_free_path * mean_speed
@@ -183,8 +190,8 @@ def molecular_diffusivity(temp_k: float, pressure: float,
 
 # ── _light_correction (private) ───────────────────────────────────────────────
 
-def _light_correction(drycoeff: np.ndarray, lai: float,
-                      suncos: float, cloud_frac: float) -> float:
+
+def _light_correction(drycoeff: np.ndarray, lai: float, suncos: float, cloud_frac: float) -> float:
     """Stomatal light-correction factor (Wang et al. 1998).
 
     Computes a degree-3 polynomial over normalised {1, LAI, cos(SZA), f_cloud}
@@ -207,28 +214,29 @@ def _light_correction(drycoeff: np.ndarray, lai: float,
         Correction factor (≥ 0.1).
     """
     # ── Normalise inputs (inline SUNPARAM) ────────────────────────────────
-    _ND = np.array([55.0, 20.0, 11.0])   # scaling factors per variable
-    _X0 = np.array([11.0,  1.0,  1.0])   # maxima per variable
+    _ND = np.array([55.0, 20.0, 11.0])  # scaling factors per variable
+    _X0 = np.array([11.0, 1.0, 1.0])  # maxima per variable
 
     raw = np.array([lai, suncos, cloud_frac], dtype=float)
     raw = np.minimum(raw, _X0)
     xlow = np.where(np.arange(3) != 2, _X0 / _ND, 0.0)
-    raw  = np.maximum(raw, xlow)
+    raw = np.maximum(raw, xlow)
     normed = raw / _X0
 
     # Four terms: constant + three normalised variables
-    terms = np.concatenate([[1.0], normed])   # shape (4,)
+    terms = np.concatenate([[1.0], normed])  # shape (4,)
 
     # Build the 20 cubic polynomial terms C(4+3-1,3) = C(6,3) = 20
     indices = list(combinations_with_replacement(range(4), 3))  # 20 triples
-    idx = np.array(indices)                                      # (20, 3)
-    realterms = np.prod(terms[idx], axis=1)                     # (20,)
+    idx = np.array(indices)  # (20, 3)
+    realterms = np.prod(terms[idx], axis=1)  # (20,)
 
     result = float(np.dot(drycoeff, realterms))
     return max(result, 0.1)
 
 
 # ── deposition_velocity ───────────────────────────────────────────────────────
+
 
 def deposition_velocity(
     patches,
@@ -294,7 +302,7 @@ def deposition_velocity(
         Deposition velocity in cm s⁻¹.
     """
     n = len(patches)
-    temp_c  = ts - 273.15
+    temp_c = ts - 273.15
 
     # ── Kinematic viscosity of air (m² s⁻¹) ──────────────────────────────
     kin_visc = 0.151e-4 * (ts / 273.15) ** 1.77
@@ -305,7 +313,7 @@ def deposition_velocity(
     # ── Extract per-patch resistance values ───────────────────────────────
     # Use np.inf directly where sentinel ≥ 9999 (1/inf = 0 in NumPy)
     fractions = np.array([p.fraction for p in patches])
-    lai       = np.array([p.lai      for p in patches])
+    lai = np.array([p.lai for p in patches])
 
     # IUSE in the original is fraction * 1000; XLAI_scale = XLAI[IOLSON] / IUSE * 1000
     # which simplifies to lai / fraction (LAI normalised to unit area).
@@ -316,9 +324,9 @@ def deposition_velocity(
     def _to_inf(arr):
         return np.where(arr >= 9999.0, np.inf, arr)
 
-    iri_raw   = _to_inf(np.array([p.iri   for p in patches]))
-    irlu_raw  = _to_inf(np.array([p.irlu  for p in patches]))
-    irac_raw  = _to_inf(np.array([p.irac  for p in patches]))
+    iri_raw = _to_inf(np.array([p.iri for p in patches]))
+    irlu_raw = _to_inf(np.array([p.irlu for p in patches]))
+    irac_raw = _to_inf(np.array([p.irac for p in patches]))
     irgss_raw = _to_inf(np.array([p.irgss for p in patches]))
     irgso_raw = _to_inf(np.array([p.irgso for p in patches]))
     ircls_raw = _to_inf(np.array([p.ircls for p in patches]))
@@ -329,9 +337,9 @@ def deposition_velocity(
     # means ALL resistance arrays are looked up at index 0 (IRI[0], IRLU[0],
     # etc.).  In our patch-direct design, patch 0 carries those values.
     if is_snow:
-        snow_iri   = _to_inf(np.full(n, patches[0].iri))
-        snow_irlu  = _to_inf(np.full(n, patches[0].irlu))
-        snow_irac  = _to_inf(np.full(n, patches[0].irac))
+        snow_iri = _to_inf(np.full(n, patches[0].iri))
+        snow_irlu = _to_inf(np.full(n, patches[0].irlu))
+        snow_irac = _to_inf(np.full(n, patches[0].irac))
         snow_irgss = _to_inf(np.full(n, patches[0].irgss))
         snow_irgso = _to_inf(np.full(n, patches[0].irgso))
         snow_ircls = _to_inf(np.full(n, patches[0].ircls))
@@ -351,18 +359,16 @@ def deposition_velocity(
     gfaci = np.full(n, 100.0)
     for i in range(n):
         if radiat > 0.0 and lai_per_frac[i] > 0.0:
-            gfaci[i] = 1.0 / _light_correction(
-                drycoeff, lai_per_frac[i], suncos_mid, cloud_frac
-            )
+            gfaci[i] = 1.0 / _light_correction(drycoeff, lai_per_frac[i], suncos_mid, cloud_frac)
 
     # Effective stomatal resistance (inf where stomata are closed)
-    ri = iri_raw * gfact * gfaci   # inf * finite = inf → correct
+    ri = iri_raw * gfact * gfaci  # inf * finite = inf → correct
 
     # ── Cuticular resistance (RLU) ────────────────────────────────────────
     # Per-leaf irlu divided by LAI gives bulk canopy value.
     # np.errstate: division by zero when lai_per_frac=0 is intentional —
     # the np.where condition selects 1e6 for those elements.
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         rlu_base = np.where(
             (irlu_raw >= np.inf) | (lai_per_frac <= 0.0),
             1e6,
@@ -410,8 +416,8 @@ def deposition_velocity(
     rdc = 100.0 * (1.0 + 1000.0 / (radiat + 10.0))
 
     # ── Species-dependent surface resistance components ───────────────────
-    diff_h2o  = molecular_diffusivity(ts, pressure, _MW_WATER)
-    diff_gas  = molecular_diffusivity(ts, pressure, mol_weight)
+    diff_h2o = molecular_diffusivity(ts, pressure, _MW_WATER)
+    diff_gas = molecular_diffusivity(ts, pressure, mol_weight)
 
     # Effective stomatal resistance scaled for species diffusivity + solubility
     rixx = ri * (diff_h2o / diff_gas) + 1.0 / (hstar / 3000.0 + 100.0 * f0)
@@ -426,29 +432,24 @@ def deposition_velocity(
     # Lower canopy: parallel pathways.
     # np.errstate: when rcls=rclo=inf the denominator is 0 → rclx=inf,
     # so 1/rclx=0, correctly excluding the pathway from the parallel sum.
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         rclx = 1.0 / (hstar / 1e5 / rcls + f0 / rclo)
 
     # ── Bulk surface resistance (Wesely Fig. 1 parallel network) ─────────
-    r_surface = 1.0 / (
-        1.0 / rixx
-        + 1.0 / rluxx
-        + 1.0 / (rac + rgsx)
-        + 1.0 / (rdc + rclx)
-    )
+    r_surface = 1.0 / (1.0 / rixx + 1.0 / rluxx + 1.0 / (rac + rgsx) + 1.0 / (rdc + rclx))
     r_surface = np.clip(r_surface, 1.0, 9999.0)
 
     # ── Aerodynamic and quasi-laminar resistances (patch-independent) ─────
-    ckustr  = _VON_KARMAN * ustar
+    ckustr = _VON_KARMAN * ustar
     reynolds = ustar * roughness_length / kin_visc
-    corr    = cz1 / obk
-    z0_obk  = roughness_length / obk
+    corr = cz1 / obk
+    z0_obk = roughness_length / obk
 
     if reynolds >= 0.1:
         # Aerodynamically rough surface
         if corr < 0.0:
             # Unstable
-            d1 = (1.0 - 15.0 * corr)  ** 0.5
+            d1 = (1.0 - 15.0 * corr) ** 0.5
             d2 = (1.0 - 15.0 * z0_obk) ** 0.5
             d3 = abs((d1 - 1.0) / (d1 + 1.0))
             d4 = abs((d2 - 1.0) / (d2 + 1.0))
@@ -467,8 +468,8 @@ def deposition_velocity(
     else:
         # Aerodynamically smooth surface
         r_aero = 1e4
-        c1x = r_aero + r_surface   # no quasi-laminar term in original smooth branch
+        c1x = r_aero + r_surface  # no quasi-laminar term in original smooth branch
 
     # ── Sum contributions weighted by fractional cover ────────────────────
     vd = float(np.sum(0.001 * fractions * 1000.0 / c1x))
-    return vd * 100.0   # convert m s⁻¹ → cm s⁻¹
+    return vd * 100.0  # convert m s⁻¹ → cm s⁻¹

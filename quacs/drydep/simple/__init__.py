@@ -1,3 +1,4 @@
+from .box_model import DEFAULT_MET, compute_drydep_rate
 from .drydep_functions import (
     BIOFIT,
     DEPVEL,
@@ -7,7 +8,6 @@ from .drydep_functions import (
     SUNPARAM,
     Compute_Olson_landmap,
 )
-from .box_model import DEFAULT_MET, compute_drydep_rate
 
 __all__ = [
     "METERO",

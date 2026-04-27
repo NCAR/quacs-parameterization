@@ -21,4 +21,5 @@ Two sub-packages are available:
     ...                              coefficients=olson_land_cover.coefficients)
 """
 
-from quacs.drydep import lhs, simple
+from quacs.drydep import lhs as lhs
+from quacs.drydep import simple as simple

@@ -5,13 +5,15 @@ running ex_drydep_simple.py with the same inputs against the unmodified
 DEPVEL/METERO routines in drydep_functions.py.
 """
 
+import musica.mechanism_configuration as mc
 import numpy as np
 import pytest
-import musica.mechanism_configuration as mc
 
 from quacs.drydep.lhs import olson_land_cover
-from quacs.drydep.lhs.box_model import DrydepCoefficients, LandCoverPatch, compute_drydep_rate
-from quacs.drydep.lhs.species import hg0 as HG0_SPECIES, o3 as O3_SPECIES, so2 as SO2_SPECIES
+from quacs.drydep.lhs.box_model import LandCoverPatch, compute_drydep_rate
+from quacs.drydep.lhs.species import hg0 as HG0_SPECIES
+from quacs.drydep.lhs.species import o3 as O3_SPECIES
+from quacs.drydep.lhs.species import so2 as SO2_SPECIES
 
 TEST_COEFFICIENTS = olson_land_cover.coefficients
 
@@ -45,14 +47,19 @@ class TestComputeDepdryRate:
     def test_default_matches_reference_value(self):
         """Must reproduce the result from ex_drydep_simple.py exactly."""
         dvel, _ = compute_drydep_rate(
-            [HG0_SPECIES], box_height_m=1.0,
-            met=TEST_MET, land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            [HG0_SPECIES],
+            box_height_m=1.0,
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         assert dvel == pytest.approx(REFERENCE_DVEL, rel=1e-10)
 
     def test_returns_positive_velocity(self):
         dvel, _ = compute_drydep_rate(
-            [HG0_SPECIES], met=TEST_MET, land_cover=TEST_LAND_COVER,
+            [HG0_SPECIES],
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         assert dvel > 0.0
@@ -61,50 +68,69 @@ class TestComputeDepdryRate:
         """k must equal v_d [cm/s] × 0.01 / H [m]."""
         box_height = 3.5
         dvel, k = compute_drydep_rate(
-            [HG0_SPECIES], box_height_m=box_height,
-            met=TEST_MET, land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            [HG0_SPECIES],
+            box_height_m=box_height,
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         assert k == pytest.approx(dvel * 0.01 / box_height, rel=1e-12)
 
     def test_box_height_scales_k(self):
         """Doubling box height must halve k (v_d is independent of box height)."""
         _, k1 = compute_drydep_rate(
-            [HG0_SPECIES], box_height_m=1.0,
-            met=TEST_MET, land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            [HG0_SPECIES],
+            box_height_m=1.0,
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         _, k2 = compute_drydep_rate(
-            [HG0_SPECIES], box_height_m=2.0,
-            met=TEST_MET, land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            [HG0_SPECIES],
+            box_height_m=2.0,
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         assert k1 == pytest.approx(2.0 * k2, rel=1e-10)
 
     def test_snow_reduces_velocity(self):
         """Snow-covered surface (albedo > 0.4) should lower deposition velocity."""
         dvel_normal, _ = compute_drydep_rate(
-            [HG0_SPECIES], met=TEST_MET, land_cover=TEST_LAND_COVER,
+            [HG0_SPECIES],
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         dvel_snow, _ = compute_drydep_rate(
-            [HG0_SPECIES], met={**TEST_MET, "ALBD": 0.8},
-            land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            [HG0_SPECIES],
+            met={**TEST_MET, "ALBD": 0.8},
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         assert dvel_snow < dvel_normal
 
     def test_temperature_affects_velocity(self):
         dvel_ref, _ = compute_drydep_rate(
-            [HG0_SPECIES], met=TEST_MET, land_cover=TEST_LAND_COVER,
+            [HG0_SPECIES],
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         dvel_hot, _ = compute_drydep_rate(
-            [HG0_SPECIES], met={**TEST_MET, "TC0": 320.0},
-            land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            [HG0_SPECIES],
+            met={**TEST_MET, "TC0": 320.0},
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         assert dvel_ref != pytest.approx(dvel_hot, rel=1e-4)
 
     def test_met_does_not_mutate_caller_dict(self):
         caller_met = dict(TEST_MET)
         compute_drydep_rate(
-            [HG0_SPECIES], met=caller_met, land_cover=TEST_LAND_COVER,
+            [HG0_SPECIES],
+            met=caller_met,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         assert caller_met == TEST_MET
@@ -135,15 +161,21 @@ class TestSpeciesPresets:
 
     def test_species_produce_different_velocities(self):
         dvel_hg, _ = compute_drydep_rate(
-            [HG0_SPECIES], met=TEST_MET, land_cover=TEST_LAND_COVER,
+            [HG0_SPECIES],
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         dvel_o3, _ = compute_drydep_rate(
-            [O3_SPECIES], met=TEST_MET, land_cover=TEST_LAND_COVER,
+            [O3_SPECIES],
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         dvel_so2, _ = compute_drydep_rate(
-            [SO2_SPECIES], met=TEST_MET, land_cover=TEST_LAND_COVER,
+            [SO2_SPECIES],
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         assert dvel_hg != pytest.approx(dvel_o3, rel=1e-3)
@@ -156,7 +188,9 @@ class TestSpeciesPresets:
             other_properties={"henrys_law_constant": "0.5", "reactivity": "0.5"},
         )
         dvel, k = compute_drydep_rate(
-            [custom], met=TEST_MET, land_cover=TEST_LAND_COVER,
+            [custom],
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         assert dvel > 0.0
@@ -183,12 +217,16 @@ class TestOlsonLandCover:
 
     def test_custom_land_cover_changes_velocity(self):
         dvel_default, _ = compute_drydep_rate(
-            [HG0_SPECIES], met=TEST_MET, land_cover=TEST_LAND_COVER,
+            [HG0_SPECIES],
+            met=TEST_MET,
+            land_cover=TEST_LAND_COVER,
             coefficients=TEST_COEFFICIENTS,
         )
         water_patch = [olson_land_cover.water(fraction=1.0, lai=0.0)]
         dvel_water, _ = compute_drydep_rate(
-            [HG0_SPECIES], met=TEST_MET, land_cover=water_patch,
+            [HG0_SPECIES],
+            met=TEST_MET,
+            land_cover=water_patch,
             coefficients=TEST_COEFFICIENTS,
         )
         assert dvel_default != pytest.approx(dvel_water, rel=1e-3)
@@ -203,14 +241,18 @@ class TestVectorizedMode:
         N = 4
         temps = np.linspace(280, 310, N)
         result = compute_drydep_rate(
-            [HG0_SPECIES], met={**TEST_MET, "TC0": temps},
-            land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            [HG0_SPECIES],
+            met={**TEST_MET, "TC0": temps},
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         k_vec = result["Hg0"]
         for i, temp in enumerate(temps):
             _, k_scalar = compute_drydep_rate(
-                [HG0_SPECIES], met={**TEST_MET, "TC0": float(temp)},
-                land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+                [HG0_SPECIES],
+                met={**TEST_MET, "TC0": float(temp)},
+                land_cover=TEST_LAND_COVER,
+                coefficients=TEST_COEFFICIENTS,
             )
             assert k_vec[i] == pytest.approx(k_scalar, rel=1e-10)
 
@@ -218,7 +260,8 @@ class TestVectorizedMode:
         result = compute_drydep_rate(
             [HG0_SPECIES, SO2_SPECIES],
             met={**TEST_MET, "TC0": np.array([295.0, 300.0])},
-            land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         assert isinstance(result, dict)
         assert "Hg0" in result
@@ -230,7 +273,8 @@ class TestVectorizedMode:
         result = compute_drydep_rate(
             [HG0_SPECIES, SO2_SPECIES, O3_SPECIES],
             met={**TEST_MET, "TC0": np.linspace(275, 305, N)},
-            land_cover=TEST_LAND_COVER, coefficients=TEST_COEFFICIENTS,
+            land_cover=TEST_LAND_COVER,
+            coefficients=TEST_COEFFICIENTS,
         )
         for sp in [HG0_SPECIES, SO2_SPECIES, O3_SPECIES]:
             assert result[sp.name].shape == (N,)

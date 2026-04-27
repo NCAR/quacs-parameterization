@@ -34,7 +34,9 @@ from quacs.drydep.lhs.lhs_config import (
     N_LC_ARCHETYPES,
     build_patches_from_sample,
 )
-from quacs.drydep.lhs.species import hg0 as HG0_SPECIES, o3 as O3_SPECIES, so2 as SO2_SPECIES
+from quacs.drydep.lhs.species import hg0 as HG0_SPECIES
+from quacs.drydep.lhs.species import o3 as O3_SPECIES
+from quacs.drydep.lhs.species import so2 as SO2_SPECIES
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -75,10 +77,13 @@ def run_lhs(n_cells: int = 100, seed: int = 0) -> pd.DataFrame:
     sample_scaled = qmc.scale(sample, L_BOUNDS, U_BOUNDS)
 
     col = 0
-    met_sample = sample_scaled[:, col:col + N_MET]; col += N_MET
-    frac_sample = sample_scaled[:, col:col + N_LC_FRAC]; col += N_LC_FRAC
-    lai_sample = sample_scaled[:, col:col + N_LC_LAI]; col += N_LC_LAI
-    init_sample = sample_scaled[:, col:col + N_INIT_CONCS]
+    met_sample = sample_scaled[:, col : col + N_MET]
+    col += N_MET
+    frac_sample = sample_scaled[:, col : col + N_LC_FRAC]
+    col += N_LC_FRAC
+    lai_sample = sample_scaled[:, col : col + N_LC_LAI]
+    col += N_LC_LAI
+    init_sample = sample_scaled[:, col : col + N_INIT_CONCS]
 
     met_arrays: dict = {}
     for j, (name, *_) in enumerate(MET_DIMS):
@@ -87,8 +92,7 @@ def run_lhs(n_cells: int = 100, seed: int = 0) -> pd.DataFrame:
         met_arrays[key] = np.full(n_cells, float(val))
 
     cell_land_cover = [
-        build_patches_from_sample(frac_sample[i], lai_sample[i])
-        for i in range(n_cells)
+        build_patches_from_sample(frac_sample[i], lai_sample[i]) for i in range(n_cells)
     ]
 
     print("Computing deposition velocities …")
@@ -106,14 +110,17 @@ def run_lhs(n_cells: int = 100, seed: int = 0) -> pd.DataFrame:
     mc_species = list(SPECIES_LIST)
     gas = mc.Phase(name="gas", species=mc_species)
     reactions = [
-        mc.FirstOrderLoss(name=f"{sp.name}_drydep", scaling_factor=1.0,
-                          reactants=[mc_sp], gas_phase=gas)
+        mc.FirstOrderLoss(
+            name=f"{sp.name}_drydep", scaling_factor=1.0, reactants=[mc_sp], gas_phase=gas
+        )
         for sp, mc_sp in zip(SPECIES_LIST, mc_species)
     ]
-    mechanism = mc.Mechanism(name="lhs_drydep", species=mc_species,
-                             phases=[gas], reactions=reactions)
-    solver = musica.MICM(mechanism=mechanism,
-                         solver_type=musica.SolverType.rosenbrock_standard_order)
+    mechanism = mc.Mechanism(
+        name="lhs_drydep", species=mc_species, phases=[gas], reactions=reactions
+    )
+    solver = musica.MICM(
+        mechanism=mechanism, solver_type=musica.SolverType.rosenbrock_standard_order
+    )
 
     state = solver.create_state(n_cells)
     state.set_conditions(temperatures=met_arrays["TC0"], pressures=met_arrays["PRESSU"])
@@ -166,9 +173,7 @@ def run_lhs(n_cells: int = 100, seed: int = 0) -> pd.DataFrame:
         for sp in SPECIES_LIST:
             row[f"vd_{sp.name}_cm_s"] = float(dvel_dict[sp.name][i])
             row[f"k_{sp.name}_s"] = float(k_dict[sp.name][i])
-        df_final = df_concs[
-            (df_concs["cell"] == i) & (df_concs["time_s"] == SIM_LENGTH_S)
-        ]
+        df_final = df_concs[(df_concs["cell"] == i) & (df_concs["time_s"] == SIM_LENGTH_S)]
         for sp in SPECIES_LIST:
             if not df_final.empty:
                 row[f"conc_final_{sp.name}_mol_m3"] = float(
@@ -191,16 +196,20 @@ def make_sensitivity_plots(df: pd.DataFrame, output_dir: str):
     for sp_col, sp_name in zip(species_cols, species_names):
         ncols = 3
         nrows = int(np.ceil(len(met_names) / ncols))
-        fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows),
-                                 constrained_layout=True)
+        fig, axes = plt.subplots(
+            nrows, ncols, figsize=(5 * ncols, 4 * nrows), constrained_layout=True
+        )
         for ax, met_name, met_label in zip(axes.flatten(), met_names, met_labels):
             ax.scatter(df[f"met_{met_name}"], df[sp_col], s=10, alpha=0.5, color="steelblue")
             ax.set_xlabel(met_label, fontsize=9)
             ax.set_ylabel(f"$v_d$ {sp_name} (cm s⁻¹)", fontsize=9)
-        for ax in axes.flatten()[len(met_names):]:
+        for ax in axes.flatten()[len(met_names) :]:
             ax.set_visible(False)
-        fig.suptitle(f"Sensitivity of {sp_name} deposition velocity — met inputs\n"
-                     f"(n = {len(df)} LHS samples)", fontsize=11)
+        fig.suptitle(
+            f"Sensitivity of {sp_name} deposition velocity — met inputs\n"
+            f"(n = {len(df)} LHS samples)",
+            fontsize=11,
+        )
         out_path = os.path.join(output_dir, f"lhs_sensitivity_{sp_name}.png")
         fig.savefig(out_path, dpi=150)
         plt.close(fig)
@@ -210,17 +219,19 @@ def make_sensitivity_plots(df: pd.DataFrame, output_dir: str):
     for sp_col, sp_name in zip(species_cols, species_names):
         ncols = min(len(lc_names), 3)
         nrows = int(np.ceil(len(lc_names) / ncols))
-        fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows),
-                                 constrained_layout=True)
+        fig, axes = plt.subplots(
+            nrows, ncols, figsize=(5 * ncols, 4 * nrows), constrained_layout=True
+        )
         for ax, lc_name in zip(np.atleast_1d(axes).flatten(), lc_names):
-            ax.scatter(df[f"lc_frac_{lc_name}"], df[sp_col], s=10, alpha=0.5,
-                       color="darkorange")
+            ax.scatter(df[f"lc_frac_{lc_name}"], df[sp_col], s=10, alpha=0.5, color="darkorange")
             ax.set_xlabel(f"Fraction: {lc_name}", fontsize=9)
             ax.set_ylabel(f"$v_d$ {sp_name} (cm s⁻¹)", fontsize=9)
-        for ax in np.atleast_1d(axes).flatten()[len(lc_names):]:
+        for ax in np.atleast_1d(axes).flatten()[len(lc_names) :]:
             ax.set_visible(False)
-        fig.suptitle(f"Sensitivity of {sp_name} $v_d$ to land-cover fraction\n"
-                     f"(n = {len(df)} LHS samples)", fontsize=11)
+        fig.suptitle(
+            f"Sensitivity of {sp_name} $v_d$ to land-cover fraction\n(n = {len(df)} LHS samples)",
+            fontsize=11,
+        )
         out_path = os.path.join(output_dir, f"lhs_landcover_{sp_name}.png")
         fig.savefig(out_path, dpi=150)
         plt.close(fig)
@@ -231,8 +242,9 @@ def make_timeseries_plot(df_concs: pd.DataFrame, output_dir: str):
     """Plot mean normalised concentration ± 1 std across cells over time."""
     os.makedirs(output_dir, exist_ok=True)
     times = sorted(df_concs["time_s"].unique())
-    fig, axes = plt.subplots(1, len(SPECIES_LIST), figsize=(5 * len(SPECIES_LIST), 4),
-                             constrained_layout=True)
+    fig, axes = plt.subplots(
+        1, len(SPECIES_LIST), figsize=(5 * len(SPECIES_LIST), 4), constrained_layout=True
+    )
     init_time = times[0]
     for ax, sp in zip(axes, SPECIES_LIST):
         col = f"conc_{sp.name}_mol_m3"
@@ -245,8 +257,14 @@ def make_timeseries_plot(df_concs: pd.DataFrame, output_dir: str):
         times_min = np.array(times) / 60.0
         means, stds = np.array(means), np.array(stds)
         ax.plot(times_min, means, color="steelblue", label="mean")
-        ax.fill_between(times_min, np.clip(means - stds, 0, None), means + stds,
-                        alpha=0.3, color="steelblue", label="±1 std")
+        ax.fill_between(
+            times_min,
+            np.clip(means - stds, 0, None),
+            means + stds,
+            alpha=0.3,
+            color="steelblue",
+            label="±1 std",
+        )
         ax.set_xlabel("Time (min)")
         ax.set_ylabel("Normalised concentration")
         ax.set_title(sp.name)

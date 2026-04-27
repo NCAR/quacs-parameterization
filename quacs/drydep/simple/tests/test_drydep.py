@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from quacs.drydep.simple.box_model import DEFAULT_MET, compute_drydep_rate
-from quacs.drydep.simple.drydep_functions import DEPVEL, DIFFG, GET_OBK, METERO
+from quacs.drydep.simple.drydep_functions import DIFFG, GET_OBK, METERO
 
 
 def test_get_obk_sign():

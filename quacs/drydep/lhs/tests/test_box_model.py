@@ -11,7 +11,7 @@ import musica.mechanism_configuration as mc
 
 from quacs.drydep.lhs import olson_land_cover
 from quacs.drydep.lhs.box_model import DrydepCoefficients, LandCoverPatch, compute_drydep_rate
-from quacs.drydep.lhs.musica_box_model import hg0 as HG0_SPECIES, o3 as O3_SPECIES, so2 as SO2_SPECIES
+from quacs.drydep.lhs.species import hg0 as HG0_SPECIES, o3 as O3_SPECIES, so2 as SO2_SPECIES
 
 TEST_COEFFICIENTS = olson_land_cover.coefficients
 

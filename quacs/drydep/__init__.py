@@ -15,8 +15,7 @@ Two sub-packages are available:
     for flexible land cover, vectorized multi-cell computation, and a Latin
     Hypercube Sampling sensitivity driver.  Requires musica.
 
-    >>> from quacs.drydep.lhs import compute_drydep_rate, olson_land_cover
-    >>> from quacs.drydep.lhs.musica_box_model import hg0, so2, o3
+    >>> from quacs.drydep.lhs import compute_drydep_rate, olson_land_cover, hg0, so2, o3
     >>> land_cover = [olson_land_cover.tropical_forest()]
     >>> result = compute_drydep_rate([hg0], met={...}, land_cover=land_cover,
     ...                              coefficients=olson_land_cover.coefficients)

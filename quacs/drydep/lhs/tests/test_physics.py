@@ -20,13 +20,13 @@ from quacs.drydep.lhs.drydep_physics import (
     molecular_diffusivity,
     monin_obukhov_length,
 )
-from quacs.drydep.lhs.lhs_driver import (
+from quacs.drydep.lhs.lhs_config import (
     LC_ARCHETYPES,
     MET_DIMS,
     N_LC_ARCHETYPES,
     build_patches_from_sample,
 )
-from quacs.drydep.lhs.musica_box_model import hg0 as HG0_SPECIES, o3 as O3_SPECIES, so2 as SO2_SPECIES
+from quacs.drydep.lhs.species import hg0 as HG0_SPECIES, o3 as O3_SPECIES, so2 as SO2_SPECIES
 from quacs.drydep.simple.drydep_functions import BIOFIT, DEPVEL, DIFFG, GET_OBK, METERO
 
 # ── LHS sample generation ────────────────────────────────────────────────────

@@ -2,47 +2,25 @@
 """
 MUSICA box model for multi-species dry deposition.
 
-Uses the offline GEOS-Chem dry deposition scheme (box_model.py) to
-compute v_d (cm/s) for each species, converts it to a first-order loss rate
-k (s⁻¹) for a 1 m³ box, and integrates concentrations forward in time with
-MICM.
+Computes v_d (cm/s) for Hg0, SO2, and O3 and integrates concentrations
+forward in time with MICM over a tropical mixed-forest grid cell.
 
-Species included: Hg0, SO2, O3  (trivial to extend via ``species``).
+Usage::
+
+    python -m quacs.drydep.lhs.examples.musica_box_model
 """
 
 import numpy as np
-
 import musica
 import musica.mechanism_configuration as mc
 
-from . import olson_land_cover
-from .box_model import compute_drydep_rate
-
-# ── Species list ───────────────────────────────────────────────────────────────
-# Dry-deposition parameters are stored in other_properties (must be str values):
-#   henrys_law_constant : effective Henry's law constant at pH 7 (M atm⁻¹)
-#   reactivity          : biological reactivity factor F0 (dimensionless, 0–1)
-hg0 = mc.Species(
-    name="Hg0",
-    molecular_weight_kg_mol=201e-3,
-    other_properties={"henrys_law_constant": "0.11", "reactivity": "3e-5"},
-)
-so2 = mc.Species(
-    name="SO2",
-    molecular_weight_kg_mol=64e-3,
-    other_properties={"henrys_law_constant": "1e5", "reactivity": "0.0"},
-)
-o3 = mc.Species(
-    name="O3",
-    molecular_weight_kg_mol=48e-3,
-    other_properties={"henrys_law_constant": "1e-2", "reactivity": "1.0"},
-)
+from quacs.drydep.lhs import olson_land_cover
+from quacs.drydep.lhs.box_model import compute_drydep_rate
+from quacs.drydep.lhs.species import hg0, o3, so2
 
 species = [hg0, so2, o3]
-
 BOX_HEIGHT_M = 1.0  # m
 
-# ── Met conditions and land cover (tropical mixed-forest reference) ────────────
 met = dict(
     TC0=302.0,
     CFRAC=0.8,
@@ -87,34 +65,18 @@ if __name__ == "__main__":
         )
     print()
 
-    # ── MUSICA mechanism ──────────────────────────────────────────────────────
     gas = mc.Phase(name="gas", species=species)
-
     reactions = [
-        mc.FirstOrderLoss(
-            name=f"{sp.name}_drydep",
-            scaling_factor=1.0,
-            reactants=[sp],
-            gas_phase=gas,
-        )
+        mc.FirstOrderLoss(name=f"{sp.name}_drydep", scaling_factor=1.0,
+                          reactants=[sp], gas_phase=gas)
         for sp in species
     ]
+    mechanism = mc.Mechanism(name="drydep_multispecies_box", species=species,
+                             phases=[gas], reactions=reactions)
+    solver = musica.MICM(mechanism=mechanism,
+                         solver_type=musica.SolverType.rosenbrock_standard_order)
 
-    mechanism = mc.Mechanism(
-        name="drydep_multispecies_box",
-        species=species,
-        phases=[gas],
-        reactions=reactions,
-    )
-
-    solver = musica.MICM(
-        mechanism=mechanism,
-        solver_type=musica.SolverType.rosenbrock_standard_order,
-    )
-
-    # ── Initial conditions ────────────────────────────────────────────────────
     initial_ng_m3 = {"Hg0": 1.5, "SO2": 1000.0, "O3": 120e6}
-
     initial_mol_m3 = {
         sp.name: initial_ng_m3[sp.name] * 1e-9 / (sp.molecular_weight_kg_mol * 1e3)
         for sp in species
@@ -127,7 +89,6 @@ if __name__ == "__main__":
         {f"LOSS.{sp.name}_drydep": [k_rates[sp.name][0]] for sp in species}
     )
 
-    # ── Time integration ──────────────────────────────────────────────────────
     k_max = max(k_rates[sp.name][0] for sp in species)
     time_step = 10.0
     n_steps = int(3.0 / k_max / time_step)
@@ -144,13 +105,11 @@ if __name__ == "__main__":
             concs[sp.name][i + 1] = cell_concs[sp.name][0]
         times[i + 1] = (i + 1) * time_step
 
-    # ── Print results ─────────────────────────────────────────────────────────
     header = f"{'Time (s)':>10}  {'Time (min)':>10}  " + "  ".join(
         f"{sp.name:>14}" for sp in species
     )
     print(header)
     print("-" * len(header))
-
     for step in range(0, n_steps + 1, max(1, n_steps // 20)):
         t = times[step]
         row = f"{t:10.1f}  {t/60:10.2f}  "

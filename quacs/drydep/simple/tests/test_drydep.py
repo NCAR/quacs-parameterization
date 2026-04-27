@@ -68,5 +68,5 @@ def test_compute_drydep_rate_met_override():
 
 def test_compute_drydep_rate_partial_override():
     _, k1 = compute_drydep_rate(met={"USTAR": 0.30})
-    _, k2 = compute_drydep_rate(met={"USTAR": 0.30, **DEFAULT_MET})
+    _, k2 = compute_drydep_rate(met={**DEFAULT_MET, "USTAR": 0.30})
     assert k1 == pytest.approx(k2)

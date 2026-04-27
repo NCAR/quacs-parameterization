@@ -11,12 +11,31 @@ requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.26",
     "pandas>=2.0",
+    "xarray>=2023.1",
+    "scipy>=1.10",
+    "netcdf4",
+    "musica",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "ruff>=0.4",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["quacs*"]
+
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["quacs"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = [
+    "E501",  # line too long — handled by ruff format
+]

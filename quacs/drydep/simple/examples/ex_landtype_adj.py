@@ -7,15 +7,15 @@ Running offline version of dry deposition of GEOS-Chem on hourly timescale, adju
 """
 
 import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import scipy.io as sio
 import xarray as xr
 
-from pathlib import Path
-
 from quacs.drydep.simple.drydep_functions import DEPVEL, METERO, Compute_Olson_landmap
+
 
 def weird_division(n, d):  # avoid dividing by 0
     return n / d if d else 0

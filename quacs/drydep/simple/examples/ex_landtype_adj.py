@@ -104,7 +104,8 @@ F0_am = 0.2  # Hg0 reactivity in Amazon rainforest
 # %% create daily interpolation for XLAI
 # Land type LAI
 fn_xlai = (
-    data_dir / "Yuan_MODIS_XLAI_2_25_2015.nc"  # weekly LAI data can be downloaded from GEOS-Chem WUSTL server
+    data_dir
+    / "Yuan_MODIS_XLAI_2_25_2015.nc"  # weekly LAI data can be downloaded from GEOS-Chem WUSTL server
 )
 ds_xlai = xr.open_dataset(fn_xlai)
 

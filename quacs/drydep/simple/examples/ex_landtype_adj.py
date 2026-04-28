@@ -7,6 +7,7 @@ Running offline version of dry deposition of GEOS-Chem on hourly timescale, adju
 """
 
 import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -23,7 +24,9 @@ def weird_division(n, d):  # avoid dividing by 0
 # %% Load the observational dataset, used for finding coordinates to change land type
 
 # Load dataset in pandas DataFrame
-source = "data/SI_Forest_Hg_uptake_database.csv"
+
+data_dir = Path(__file__).parent.parent.parent / "data"
+source = data_dir / "SI_Forest_Hg_uptake_database.csv"
 data_dd_f = pd.read_csv(source)
 
 # Only select stations for which a litterfall dry deposition velocity can be calculated
@@ -57,7 +60,7 @@ for i in range(n_sites):
 # %% Load necessary variables for running dry deposition code
 
 # Required Olson land variables, dry deposition parameters
-fn_ols1 = "data/Olson_2001_Drydep_Inputs.nc"
+fn_ols1 = data_dir / "Olson_2001_Drydep_Inputs.nc"
 ds_ols1 = xr.open_dataset(fn_ols1)
 
 DRYCOEFF = ds_ols1.DRYCOEFF.values  # Baldocchi dry deposition polynomial coefficients
@@ -79,7 +82,7 @@ IVSMAX = (
 )  # Max drydep velocity (for aerosol) for each dry deposition land type
 
 # Load 2 x 2.5 map of land type areas
-fn_ols2 = "data/Olson_2001_Land_Type_Masks.2_25.generic.nc"
+fn_ols2 = data_dir / "Olson_2001_Land_Type_Masks.2_25.generic.nc"
 ds_ols2 = xr.open_dataset(fn_ols2)
 # save as one np array, first dim is land types
 Olson_landtype = ds_ols2.to_array().squeeze()
@@ -101,7 +104,8 @@ F0_am = 0.2  # Hg0 reactivity in Amazon rainforest
 # %% create daily interpolation for XLAI
 # Land type LAI
 fn_xlai = (
-    "Yuan_MODIS_XLAI_2_25_2015.nc"  # weekly LAI data can be downloaded from GEOS-Chem WUSTL server
+    data_dir
+    / "Yuan_MODIS_XLAI_2_25_2015.nc"  # weekly LAI data can be downloaded from GEOS-Chem WUSTL server
 )
 ds_xlai = xr.open_dataset(fn_xlai)
 

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from quacs.drydep.simple.box_model import DEFAULT_MET, compute_drydep_rate
-from quacs.drydep.simple.drydep_functions import DEPVEL, DIFFG, GET_OBK, METERO
+from quacs.drydep.simple.drydep_functions import DIFFG, GET_OBK, METERO
 
 
 def test_get_obk_sign():
@@ -68,5 +68,5 @@ def test_compute_drydep_rate_met_override():
 
 def test_compute_drydep_rate_partial_override():
     _, k1 = compute_drydep_rate(met={"USTAR": 0.30})
-    _, k2 = compute_drydep_rate(met={"USTAR": 0.30, **DEFAULT_MET})
+    _, k2 = compute_drydep_rate(met={**DEFAULT_MET, "USTAR": 0.30})
     assert k1 == pytest.approx(k2)

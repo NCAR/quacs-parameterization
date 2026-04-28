@@ -33,8 +33,8 @@ import numpy as np
 
 from quacs.drydep.simple.drydep_functions import DEPVEL, METERO
 
-
 # ── DrydepCoefficients ───────────────────────────────────────────────────────
+
 
 @dataclass
 class DrydepCoefficients:
@@ -57,6 +57,7 @@ class DrydepCoefficients:
 
 
 # ── LandCoverPatch ────────────────────────────────────────────────────────────
+
 
 @dataclass
 class LandCoverPatch:
@@ -100,6 +101,7 @@ class LandCoverPatch:
 
 # ── Internal helper ──────────────────────────────────────────────────────────
 
+
 def _patches_to_depvel_arrays(patches: List[LandCoverPatch]):
     """Convert a list of LandCoverPatch objects to DEPVEL-compatible arrays."""
     n = len(patches)
@@ -130,13 +132,23 @@ def _patches_to_depvel_arrays(patches: List[LandCoverPatch]):
         irclo_arr[i] = patch.irclo
 
     return (
-        IREG, ILAND, IUSE, XLAI,
-        idep_arr, iri_arr, irlu_arr, irac_arr,
-        irgss_arr, irgso_arr, ircls_arr, irclo_arr,
+        IREG,
+        ILAND,
+        IUSE,
+        XLAI,
+        idep_arr,
+        iri_arr,
+        irlu_arr,
+        irac_arr,
+        irgss_arr,
+        irgso_arr,
+        ircls_arr,
+        irclo_arr,
     )
 
 
 # ── compute_drydep_rate ───────────────────────────────────────────────────────
+
 
 def compute_drydep_rate(
     species: List[mc.Species],
@@ -192,9 +204,7 @@ def compute_drydep_rate(
 
     if len(species) == 1 and is_scalar and isinstance(land_cover[0], LandCoverPatch):
         sp = species[0]
-        dvel_cms, k_s = _compute_single_cell(
-            met, land_cover, sp, box_height_m, coefficients
-        )
+        dvel_cms, k_s = _compute_single_cell(met, land_cover, sp, box_height_m, coefficients)
         return dvel_cms, k_s
 
     # Vectorized path
@@ -221,9 +231,7 @@ def compute_drydep_rate(
         cell_met = {k: float(v[i]) for k, v in met_arrays.items()}
         patches = cell_land_cover[i]
         for sp in species:
-            dvel_cms, k_s = _compute_single_cell(
-                cell_met, patches, sp, box_height_m, coefficients
-            )
+            dvel_cms, k_s = _compute_single_cell(cell_met, patches, sp, box_height_m, coefficients)
             result[sp.name][i] = k_s
 
     return result
@@ -238,25 +246,62 @@ def _compute_single_cell(
 ) -> tuple:
     """Run METERO + DEPVEL for one grid cell and one species."""
     CZ1, LSNOW, OBK, _ = METERO(
-        m["BXHEIGHT"], m["ALBD"], m["TC0"], m["USTAR"],
-        m["AIRDEN"], m["HFLUX"], m["U10M"], m["V10M"],
+        m["BXHEIGHT"],
+        m["ALBD"],
+        m["TC0"],
+        m["USTAR"],
+        m["AIRDEN"],
+        m["HFLUX"],
+        m["U10M"],
+        m["V10M"],
     )
 
-    (IREG, ILAND, IUSE, XLAI,
-     idep_arr, iri_arr, irlu_arr, irac_arr,
-     irgss_arr, irgso_arr, ircls_arr, irclo_arr) = _patches_to_depvel_arrays(patches)
+    (
+        IREG,
+        ILAND,
+        IUSE,
+        XLAI,
+        idep_arr,
+        iri_arr,
+        irlu_arr,
+        irac_arr,
+        irgss_arr,
+        irgso_arr,
+        ircls_arr,
+        irclo_arr,
+    ) = _patches_to_depvel_arrays(patches)
 
     hstar = float(sp.other_properties["henrys_law_constant"])
     f0 = float(sp.other_properties["reactivity"])
 
     dvel_cms = DEPVEL(
-        coefficients.drycoeff, coefficients.iolson,
-        idep_arr, iri_arr, irlu_arr, irac_arr,
-        irgss_arr, irgso_arr, ircls_arr, irclo_arr,
-        IREG, ILAND, IUSE, m["TC0"],
-        XLAI, LSNOW, m["RADIAT"], m["CFRAC"], m["SUNCOS_MID"],
-        m["PRESSU"], m["USTAR"], m["AZO"], CZ1, OBK,
-        sp.molecular_weight_kg_mol, f0, hstar,
+        coefficients.drycoeff,
+        coefficients.iolson,
+        idep_arr,
+        iri_arr,
+        irlu_arr,
+        irac_arr,
+        irgss_arr,
+        irgso_arr,
+        ircls_arr,
+        irclo_arr,
+        IREG,
+        ILAND,
+        IUSE,
+        m["TC0"],
+        XLAI,
+        LSNOW,
+        m["RADIAT"],
+        m["CFRAC"],
+        m["SUNCOS_MID"],
+        m["PRESSU"],
+        m["USTAR"],
+        m["AZO"],
+        CZ1,
+        OBK,
+        sp.molecular_weight_kg_mol,
+        f0,
+        hstar,
     )
 
     k_s = dvel_cms * 0.01 / box_height_m

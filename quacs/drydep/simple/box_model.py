@@ -137,4 +137,4 @@ def compute_drydep_rate(box_height_m=1.0, met=None):
 
 if __name__ == "__main__":
     dvel, k = compute_drydep_rate(box_height_m=1.0)
-    print(f"v_d = {dvel:.4f} cm/s,  k = {k:.4e} s⁻¹,  lifetime = {1/k:.1f} s")
+    print(f"v_d = {dvel:.4f} cm/s,  k = {k:.4e} s⁻¹,  lifetime = {1 / k:.1f} s")

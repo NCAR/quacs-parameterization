@@ -20,7 +20,6 @@ when resistance values are specified manually.
 
 from pathlib import Path
 
-import numpy as np
 import xarray as xr
 
 from .box_model import DrydepCoefficients, LandCoverPatch

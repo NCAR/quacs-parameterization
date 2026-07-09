@@ -8,19 +8,13 @@ only the layer fraction.
 
 ![Plume-rise workflow](diagrams/plumerise_workflow.drawio.png)
 
-## What It Does
+## Outer Driver And Steps
 
-The workflow is intentionally narrow and executable. It does not include species
-dimensions, host-model adapters, or emission-file parsing.
-
-- Step 1 diagnoses `pyrocb_flag` from a pyrometeopy-style PFT calculation and a
-  vegetation-dependent fire heat-flux proxy.
-- Step 2 returns direct injection-height variables. The current simplified
-  baseline PRM height is prescribed as `3000-6000 m AGL`.
-- Step 3 converts direct mass-split and height variables into the normalized
-  output `layer_fraction[k]`.
-
-Main public entry point:
+The public outer driver is
+`compute_wildfire_profile_fraction_driver`. It accepts direct meteorological,
+vegetation, and fire-size variables for one wildfire column, calls the three
+internal workflow steps, and returns only the normalized vertical
+`layer_fraction[k]` profile.
 
 ```python
 from quacs.plumerise import compute_wildfire_profile_fraction_driver
@@ -38,60 +32,51 @@ layer_fraction = compute_wildfire_profile_fraction_driver(
 )
 ```
 
+The outer driver calls:
+
+| Step | Module | Main role | Main output | Unit |
+| --- | --- | --- | --- | --- |
+| Outer driver | `wildfire_profile_fraction_driver.py` | Pass direct input variables through the workflow and expose the public API. | `layer_fraction[k]` | unitless |
+| Step 1 | `pyrocb_flag_driver.py` | Diagnose whether the column follows the pyroCb branch using PFT and firepower proxy calculations. | `pyrocb_flag` | unitless boolean |
+| Step 2 | `prm_height_driver.py` | Resolve the baseline PRM height range and optional pyroCb-adjusted height range. | `injectH_base_m`, `injectH_top_m`, `injectH_pyroCb_base_m`, `injectH_pyroCb_top_m` | m AGL |
+| Step 3 | `layer_fraction_driver.py` | Convert mass split and injection-height ranges into the final vertical profile. | `layer_fraction[k]` | unitless |
+
 ## Inputs And Output
 
 The public driver accepts direct variables, not pre-built column, fire, or
-vegetation dictionaries:
+vegetation dictionaries. Input variable names do not include unit suffixes;
+units are defined by the contract below.
 
-- `z` in m AGL
-- `p` in hPa
-- `t` in K
-- `u`, `v` in m s^-1
-- `qv` in kg kg^-1
-- `vegetation_class` as a lookup key
-- `fire_size_mean` and optional `fire_size_std` in m^2
+### Meteorological Profile Inputs
 
-The output is unitless `layer_fraction[k]`, normalized over the model layers.
-Detailed units and step contracts are in `docs/workflow_contract.md`.
+| Field | Required? | Unit | Meaning |
+| --- | --- | --- | --- |
+| `z` | yes | m AGL | Vertical coordinate for the one-column profile. |
+| `p` | yes | hPa | Pressure profile on `z`; used by the PFT calculation. |
+| `t` | yes | K | Temperature profile on `z`. |
+| `u` | yes | m s^-1 | Zonal wind profile on `z`. |
+| `v` | yes | m s^-1 | Meridional wind profile on `z`. |
+| `qv` | yes | kg kg^-1 | Water-vapor specific humidity profile on `z`. |
 
-## Quick Start
+### Fire And Vegetation Inputs
 
-From this repository:
+| Field | Required? | Unit | Meaning |
+| --- | --- | --- | --- |
+| `vegetation_class` | yes | unitless | Vegetation lookup key for the internal mass-split and heat-flux tables. |
+| `fire_size_mean` | yes | m^2 | Mean fire area or fire-size proxy for the column. |
+| `fire_size_std` | optional | m^2 | Fire-size uncertainty used for the high-bound firepower estimate; default is `0.0`. |
 
-```bash
-python3 -m pip install -e .
-python3 quacs/plumerise/examples/run_single_column_workflow.py
-python3 -m pytest -q quacs/plumerise/tests
-```
+### Public Output
 
-From a source checkout without installing:
-
-```bash
-PYTHONPATH=. python3 quacs/plumerise/examples/run_single_column_workflow.py
-PYTHONPATH=. python3 -m pytest -q quacs/plumerise/tests
-```
-
-## Notebook Walkthrough
-
-The example notebook starts with a synthetic sounding, then runs Step 1, Step 2,
-Step 3, and the full public driver:
-
-```bash
-python3 -m jupyter nbconvert --execute --to notebook --inplace quacs/plumerise/examples/single_column_workflow_steps.ipynb
-```
+| Field | Unit | Meaning |
+| --- | --- | --- |
+| `layer_fraction[k]` | unitless | Normalized vertical profile fraction for each model layer; the profile sums to 1 over `k`. |
 
 ## Repository Layout
 
 ```text
 quacs/plumerise/                 Python package and three step drivers
-quacs/plumerise/examples/        Script and notebook examples
+quacs/plumerise/examples/        Notebook example
 quacs/plumerise/tests/           Contract tests
-quacs/plumerise/docs/            Detailed input-process-output contract
 quacs/plumerise/diagrams/        Workflow diagram source and PNG
 ```
-
-## Scope Notes
-
-This repository is a reference contract, not a full atmospheric host-model
-coupler. Tables for vegetation split and heat flux are internal defaults for
-the current simplified workflow.

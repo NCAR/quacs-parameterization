@@ -48,4 +48,3 @@ and tests that pass under `pytest` from the repo root.
 | Name | Description | Reference |
 |------|-------------|-----------|
 | [`drydep`](quacs/drydep/README.md) | GEOS-Chem offline dry deposition scheme for Hg0 | Wesely (1989); Feinberg et al. (2022) |
-| [`plumerise`](quacs/plumerise/README.md) | Direct-input wildfire plume-rise profile-fraction reference workflow | Pyrometeopy-style PFT diagnostic; simplified PRM height contract |

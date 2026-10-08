@@ -153,9 +153,7 @@ def canopy_temperature_lapse_rate(canopy_type: int, solar_w_m2: float) -> float:
     if solar_w_m2 > 0.0:
         return float(
             daytime_rate
-            - (transition_solar - solar_w_m2)
-            / transition_solar
-            * (daytime_rate - nighttime_rate)
+            - (transition_solar - solar_w_m2) / transition_solar * (daytime_rate - nighttime_rate)
         )
     return float(nighttime_rate)
 
@@ -164,35 +162,24 @@ def mixing_ratio_to_vapor_pressure(mixing_ratio_kg_kg: float, pressure_pa: float
     """Convert water-vapor mixing ratio (kg kg-1) to vapor pressure (Pa)."""
 
     molecular_weight_ratio = 18.016 / 28.97
-    return float(
-        mixing_ratio_kg_kg
-        / (mixing_ratio_kg_kg + molecular_weight_ratio)
-        * pressure_pa
-    )
+    return float(mixing_ratio_kg_kg / (mixing_ratio_kg_kg + molecular_weight_ratio) * pressure_pa)
 
 
-def relative_humidity_to_vapor_pressure(relative_humidity_percent: float, temperature_k: float) -> float:
+def relative_humidity_to_vapor_pressure(
+    relative_humidity_percent: float, temperature_k: float
+) -> float:
     """Convert relative humidity (%) to water-vapor pressure (Pa)."""
 
     temperature_c = temperature_k - 273.15
-    saturation_vapor_pressure_kpa = 0.6112 * np.exp(
-        17.67 * temperature_c / (temperature_c + 243.5)
-    )
-    return float(
-        saturation_vapor_pressure_kpa
-        * relative_humidity_percent
-        * 0.01
-        * 1000.0
-    )
+    saturation_vapor_pressure_kpa = 0.6112 * np.exp(17.67 * temperature_c / (temperature_c + 243.5))
+    return float(saturation_vapor_pressure_kpa * relative_humidity_percent * 0.01 * 1000.0)
 
 
 def vapor_pressure_to_relative_humidity(vapor_pressure_kpa: float, temperature_k: float) -> float:
     """Convert water-vapor pressure (kPa) to relative humidity as a fraction."""
 
     temperature_c = temperature_k - 273.15
-    saturation_vapor_pressure_kpa = 0.6112 * np.exp(
-        17.67 * temperature_c / (temperature_c + 243.5)
-    )
+    saturation_vapor_pressure_kpa = 0.6112 * np.exp(17.67 * temperature_c / (temperature_c + 243.5))
     return float(vapor_pressure_kpa / saturation_vapor_pressure_kpa)
 
 
@@ -206,21 +193,13 @@ def radiation_extinction_coefficients(
 
     p_value = np.sqrt(1.0 - scattering_coefficient)
     beam_reflection = 1.0 - np.exp(
-        (
-            -2.0
-            * ((1.0 - p_value) / (1.0 + p_value))
-            * beam_extinction_black_leaf
-        )
+        (-2.0 * ((1.0 - p_value) / (1.0 + p_value)) * beam_extinction_black_leaf)
         / (1.0 + beam_extinction_black_leaf)
     )
 
     effective_beam_extinction = beam_extinction_black_leaf * p_value
     effective_diffuse_extinction = diffuse_extinction_black_leaf * p_value
-    absorbed_beam = (
-        beam_extinction_black_leaf
-        * beam_radiation
-        * (1.0 - scattering_coefficient)
-    )
+    absorbed_beam = beam_extinction_black_leaf * beam_radiation * (1.0 - scattering_coefficient)
     return (
         float(absorbed_beam),
         float(beam_reflection),
@@ -383,14 +362,10 @@ def canopy_radiation(
         )
 
         shade_ppfd[layer] = (
-            (diffuse_vis + scattered_vis)
-            * convert_shade_ppfd
-            / (1.0 - scattering_visible)
+            (diffuse_vis + scattered_vis) * convert_shade_ppfd / (1.0 - scattering_visible)
         )
         sun_ppfd[layer] = shade_ppfd[layer] + (
-            absorbed_beam_visible
-            * convert_sun_ppfd
-            / (1.0 - scattering_visible)
+            absorbed_beam_visible * convert_sun_ppfd / (1.0 - scattering_visible)
         )
 
         absorbed_diffuse_visible[layer] = diffuse_vis
@@ -423,12 +398,7 @@ def canopy_radiation(
 def stomatal_resistance(ppfd: float) -> float:
     """Leaf stomatal resistance (s m-1)."""
 
-    adjustment = (
-        0.0027
-        * 1.066
-        * ppfd
-        / np.sqrt(1.0 + 0.0027 * 0.0027 * ppfd**2)
-    )
+    adjustment = 0.0027 * 1.066 * ppfd / np.sqrt(1.0 + 0.0027 * 0.0027 * ppfd**2)
     return 2000.0 if adjustment < 0.1 else float(200.0 / adjustment)
 
 
@@ -447,12 +417,8 @@ def leaf_ir_emission(temperature_k: float, emissivity: float) -> float:
 def exposed_leaf_ir_input(vapor_pressure_pa: float, temperature_k: float) -> float:
     """Downward atmospheric IR incident on an exposed leaf surface."""
 
-    atmospheric_emissivity = (
-        0.7
-        + 5.95
-        * (vapor_pressure_pa / 1000.0)
-        * 1.0e-4
-        * np.exp(1500.0 / temperature_k)
+    atmospheric_emissivity = 0.7 + 5.95 * (vapor_pressure_pa / 1000.0) * 1.0e-4 * np.exp(
+        1500.0 / temperature_k
     )
     return float(atmospheric_emissivity * STEFAN_BOLTZMANN * temperature_k**4)
 
@@ -468,12 +434,7 @@ def leaf_boundary_layer_conductance(
         free_conductance = (
             0.5
             * 0.00253
-            * (
-                160_000_000.0
-                * leaf_air_temperature_difference
-                / leaf_length_m**3
-            )
-            ** 0.25
+            * (160_000_000.0 * leaf_air_temperature_difference / leaf_length_m**3) ** 0.25
             / leaf_length_m
         )
     else:
@@ -500,25 +461,13 @@ def leaf_latent_heat(
 ) -> float:
     """Latent heat term in the leaf energy balance (W m-2)."""
 
-    leaf_resistance = (
-        1.0 / (1.075 * (heat_conductance / 1231.0))
-        + stomatal_resistance_s_m
-    )
+    leaf_resistance = 1.0 / (1.075 * (heat_conductance / 1231.0)) + stomatal_resistance_s_m
     saturation_vapor_pressure = 10.0 ** (
-        -2937.4 / leaf_temperature_k
-        - 4.9283 * np.log10(leaf_temperature_k)
-        + 23.5518
+        -2937.4 / leaf_temperature_k - 4.9283 * np.log10(leaf_temperature_k) + 23.5518
     )
-    saturation_vapor_density = (
-        0.2165 * saturation_vapor_pressure / leaf_temperature_k
-    )
+    saturation_vapor_density = 0.2165 * saturation_vapor_pressure / leaf_temperature_k
     vapor_deficit = saturation_vapor_density - ambient_vapor_density_kg_m3
-    latent_heat = (
-        transpiration_type
-        / leaf_resistance
-        * latent_heat_j_kg
-        * vapor_deficit
-    )
+    latent_heat = transpiration_type / leaf_resistance * latent_heat_j_kg * vapor_deficit
     return float(max(latent_heat, 0.0))
 
 
@@ -546,9 +495,7 @@ def leaf_energy_balance(
     # airflow.  Use leaf width here; leaf length remains the characteristic
     # scale for the free-convection term below.  The previous implementation
     # accepted leaf_width_m but never used it.
-    forced_conductance = 0.0259 / (
-        0.004 * np.sqrt(leaf_width_m / effective_wind)
-    )
+    forced_conductance = 0.0259 / (0.004 * np.sqrt(leaf_width_m / effective_wind))
     resistance = stomatal_resistance(ppfd)
     outgoing_ir_at_air_temperature = leaf_ir_emission(
         air_temperature_k,
@@ -585,9 +532,7 @@ def leaf_energy_balance(
             leaf_length_m,
         )
         sensible_heat = leaf_sensible_heat(temperature_difference, conductance)
-        latent_heat_j_kg = latent_heat_of_vaporization(
-            air_temperature_k + temperature_difference
-        )
+        latent_heat_j_kg = latent_heat_of_vaporization(air_temperature_k + temperature_difference)
         latent_heat = leaf_latent_heat(
             air_temperature_k + temperature_difference,
             ambient_vapor_density,
@@ -608,13 +553,7 @@ def leaf_energy_balance(
             sensible_heat + latent_heat_change + outgoing_ir_change
         ) / temperature_difference
         temperature_difference = residual_at_air_temperature / denominator
-        balance = (
-            absorbed_shortwave
-            + incoming_ir
-            - outgoing_ir
-            - sensible_heat
-            - latent_heat
-        )
+        balance = absorbed_shortwave + incoming_ir - outgoing_ir - sensible_heat - latent_heat
 
     temperature_difference = float(np.clip(temperature_difference, -10.0, 10.0))
     leaf_temperature = air_temperature_k + temperature_difference
@@ -701,14 +640,8 @@ def canopy_energy_balance(
     # layer_depth_m increases downward from the canopy top.  Positive daytime
     # lapse rates therefore represent cooling with depth, while the negative
     # nighttime rate represents a warmer canopy interior.
-    canopy_air_temperature[:] = (
-        above_canopy_temperature_k
-        - temperature_lapse_rate * layer_depth_m
-    )
-    water_vapor_pressure[:] = (
-        above_canopy_vapor_pressure_pa
-        + humidity_gradient * layer_depth_m
-    )
+    canopy_air_temperature[:] = above_canopy_temperature_k - temperature_lapse_rate * layer_depth_m
+    water_vapor_pressure[:] = above_canopy_vapor_pressure_pa + humidity_gradient * layer_depth_m
 
     # Use a bounded exponential attenuation with normalized canopy depth.
     # The characteristic in row 15 denotes the depth fraction at which only
@@ -724,25 +657,17 @@ def canopy_energy_balance(
     )
 
     for layer in range(number_of_layers):
-        atmospheric_emissivity = (
-            0.7
-            + 5.95
-            * (water_vapor_pressure[layer] / 1000.0)
-            * 1.0e-4
-            * np.exp(1500.0 / canopy_air_temperature[layer])
-        )
+        atmospheric_emissivity = 0.7 + 5.95 * (
+            water_vapor_pressure[layer] / 1000.0
+        ) * 1.0e-4 * np.exp(1500.0 / canopy_air_temperature[layer])
         unexposed_ir = leaf_ir_emission(
             canopy_air_temperature[layer],
             atmospheric_emissivity,
         )
         shade_incoming_ir = unexposed_ir
-        sun_incoming_ir = (
-            0.75 * unexposed_ir
-            + 0.5
-            * exposed_leaf_ir_input(
-                above_canopy_vapor_pressure_pa,
-                above_canopy_temperature_k,
-            )
+        sun_incoming_ir = 0.75 * unexposed_ir + 0.5 * exposed_leaf_ir_input(
+            above_canopy_vapor_pressure_pa,
+            above_canopy_temperature_k,
         )
 
         sun_result = leaf_energy_balance(
@@ -808,6 +733,7 @@ def adjusted_lai(lai: float, canopy_type: int) -> float:
 # Backward-compatible wrappers using the original public names and return order
 # ---------------------------------------------------------------------------
 
+
 def GaussianDist(NLayers: int) -> np.ndarray:
     """Legacy alias of :func:`gaussian_layer_positions`."""
 
@@ -857,9 +783,7 @@ def CalcRadComponents(
 ) -> tuple[float, float]:
     """Legacy wrapper for absorbed diffuse and scattered radiation."""
 
-    return absorbed_radiation_components(
-        Qdiff, Qbeam, Kdp, Kbp, Kb, Scat, Refld, Reflb, LAIdepth
-    )
+    return absorbed_radiation_components(Qdiff, Qbeam, Kdp, Kbp, Kb, Scat, Refld, Reflb, LAIdepth)
 
 
 def CanopyRad(
@@ -894,11 +818,7 @@ def CanopyRad(
     # scalars consistently; only this compatibility wrapper reproduces the old
     # nighttime list shape.
     adjusted = LAI / (1.0 - CANOPY_CHARACTERISTICS[16, Cantype])
-    is_daytime = (
-        Qbeamv + Qdiffv > 0.001
-        and Sinbeta > 0.002
-        and adjusted > 0.001
-    )
+    is_daytime = Qbeamv + Qdiffv > 0.001 and Sinbeta > 0.002 and adjusted > 0.001
     if not is_daytime:
         profile[2] = np.zeros(layers, dtype=float)
     return profile
@@ -1028,11 +948,4 @@ def laiadj(laic: float, S: int) -> float:
 def CalcwaterVPpa(RH: float, tk: float) -> float:
     """Legacy Tetens helper retained with its original kPa return units."""
 
-    return float(
-        RH
-        * 0.01
-        * (
-            0.6112
-            * np.exp((17.67 * (tk - 273.16)) / (tk - 29.66))
-        )
-    )
+    return float(RH * 0.01 * (0.6112 * np.exp((17.67 * (tk - 273.16)) / (tk - 29.66))))

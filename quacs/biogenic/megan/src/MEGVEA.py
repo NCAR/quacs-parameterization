@@ -22,23 +22,77 @@ N_ACTIVITY_CLASSES = 20
 # Leaf-age response coefficients.
 _A_NEW = np.array(
     [
-        0.05, 0.05, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 0.4, 0.4,
-        3.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.05,
+        0.05,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        0.4,
+        0.4,
+        3.5,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
     ],
     dtype=float,
 )
 _A_GROWING = np.array(
     [
-        0.6, 0.6, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 0.6, 0.6,
-        3.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.6,
+        0.6,
+        1.8,
+        1.8,
+        1.8,
+        1.8,
+        1.8,
+        1.8,
+        0.6,
+        0.6,
+        3.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
     ],
     dtype=float,
 )
 _A_MATURE = np.ones(N_ACTIVITY_CLASSES, dtype=float)
 _A_OLD = np.array(
     [
-        0.9, 0.9, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 0.95, 0.95,
-        1.2, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.9,
+        0.9,
+        1.05,
+        1.05,
+        1.05,
+        1.05,
+        1.05,
+        1.05,
+        0.95,
+        0.95,
+        1.2,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
     ],
     dtype=float,
 )
@@ -58,22 +112,76 @@ _HIGH_WIND_COEFFICIENT = np.array(
 # Temperature-response coefficients.
 _CLEO = np.array(
     [
-        2.0, 2.0, 1.83, 1.83, 1.83, 1.83, 1.83, 1.83, 2.37, 2.37,
-        1.60, 1.83, 2.0, 2.0, 1.83, 1.83, 1.83, 1.83, 1.60, 1.83,
+        2.0,
+        2.0,
+        1.83,
+        1.83,
+        1.83,
+        1.83,
+        1.83,
+        1.83,
+        2.37,
+        2.37,
+        1.60,
+        1.83,
+        2.0,
+        2.0,
+        1.83,
+        1.83,
+        1.83,
+        1.83,
+        1.60,
+        1.83,
     ],
     dtype=float,
 )
 _CT1 = np.array(
     [
-        95, 95, 80, 80, 80, 80, 80, 80, 130, 130,
-        60, 80, 95, 95, 80, 80, 80, 80, 60, 80,
+        95,
+        95,
+        80,
+        80,
+        80,
+        80,
+        80,
+        80,
+        130,
+        130,
+        60,
+        80,
+        95,
+        95,
+        80,
+        80,
+        80,
+        80,
+        60,
+        80,
     ],
     dtype=float,
 )
 _BETA = np.array(
     [
-        0.13, 0.13, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.17, 0.17,
-        0.08, 0.10, 0.13, 0.13, 0.10, 0.10, 0.10, 0.10, 0.08, 0.10,
+        0.13,
+        0.13,
+        0.10,
+        0.10,
+        0.10,
+        0.10,
+        0.10,
+        0.10,
+        0.17,
+        0.17,
+        0.08,
+        0.10,
+        0.13,
+        0.13,
+        0.10,
+        0.10,
+        0.10,
+        0.10,
+        0.08,
+        0.10,
     ],
     dtype=float,
 )
@@ -120,31 +228,22 @@ def gamma_a(previous_lai: float, current_lai: float, daily_temperature_k: float)
         return np.ones(N_ACTIVITY_CLASSES, dtype=float)
 
     if lai_previous < lai_current:
-        leaf_expansion_days = (
-            5.0 + 0.7 * (300.0 - temperature)
-            if temperature <= 303.0
-            else 2.9
-        )
+        leaf_expansion_days = 5.0 + 0.7 * (300.0 - temperature) if temperature <= 303.0 else 2.9
         maturation_days = 2.3 * leaf_expansion_days
 
         if leaf_expansion_days >= update_interval_days:
             fraction_new = 1.0 - lai_previous / lai_current
         else:
             fraction_new = (
-                leaf_expansion_days
-                / update_interval_days
-                * (1.0 - lai_previous / lai_current)
+                leaf_expansion_days / update_interval_days * (1.0 - lai_previous / lai_current)
             )
 
         if maturation_days >= update_interval_days:
             fraction_mature = lai_previous / lai_current
         else:
-            fraction_mature = (
-                lai_previous / lai_current
-                + (update_interval_days - maturation_days)
-                / update_interval_days
-                * (1.0 - lai_previous / lai_current)
-            )
+            fraction_mature = lai_previous / lai_current + (
+                update_interval_days - maturation_days
+            ) / update_interval_days * (1.0 - lai_previous / lai_current)
 
         fraction_growing = 1.0 - fraction_new - fraction_mature
         fraction_old = 0.0
@@ -217,17 +316,13 @@ def _piecewise_stress(
         if value <= threshold:
             return 1.0
         if value < threshold + transition_width:
-            return 1.0 + (coefficient - 1.0) * (
-                value - threshold
-            ) / transition_width
+            return 1.0 + (coefficient - 1.0) * (value - threshold) / transition_width
         return coefficient
 
     if value >= threshold:
         return 1.0
     if value > threshold - transition_width:
-        return 1.0 + (coefficient - 1.0) * (
-            threshold - value
-        ) / transition_width
+        return 1.0 + (coefficient - 1.0) * (threshold - value) / transition_width
     return coefficient
 
 
@@ -294,9 +389,9 @@ def gamma_co2(co2_ppm: float) -> float:
         return 1.0
 
     internal_co2 = 0.7 * co2_ppm
-    return isoprene_maximum - (
-        isoprene_maximum * internal_co2**co2_exponent
-    ) / (c_star**co2_exponent + internal_co2**co2_exponent)
+    return isoprene_maximum - (isoprene_maximum * internal_co2**co2_exponent) / (
+        c_star**co2_exponent + internal_co2**co2_exponent
+    )
 
 
 def gamtld(
@@ -323,11 +418,7 @@ def gamtld(
         optimum_emission
         * ct2
         * np.exp(_CT1[species_index] * x_value)
-        / (
-            ct2
-            - _CT1[species_index]
-            * (1.0 - np.exp(ct2 * x_value))
-        )
+        / (ct2 - _CT1[species_index] * (1.0 - np.exp(ct2 * x_value)))
     )
 
 
@@ -339,12 +430,7 @@ def gamp(leaf_ppfd: float, daily_mean_ppfd: float) -> float:
 
     c1 = 1.03
     alpha = 0.004
-    return float(
-        alpha
-        * c1
-        * leaf_ppfd
-        / np.sqrt(1.0 + alpha**2 * leaf_ppfd**2)
-    )
+    return float(alpha * c1 * leaf_ppfd / np.sqrt(1.0 + alpha**2 * leaf_ppfd**2))
 
 
 def gamtli(leaf_temperature_k: float, species_index: int) -> float:
@@ -352,21 +438,13 @@ def gamtli(leaf_temperature_k: float, species_index: int) -> float:
 
     _validate_species_index(species_index)
     standard_temperature_k = 303.15
-    return float(
-        np.exp(
-            _BETA[species_index]
-            * (leaf_temperature_k - standard_temperature_k)
-        )
-    )
+    return float(np.exp(_BETA[species_index] * (leaf_temperature_k - standard_temperature_k)))
 
 
 def ResRC(ppfd: float) -> float:
     """Legacy helper for the HCHO resistance parameterization."""
 
-    return float(
-        (0.0027 * 1.066 * ppfd)
-        / np.sqrt(1.0 + 0.0027 * 0.0027 * ppfd**2)
-    )
+    return float((0.0027 * 1.066 * ppfd) / np.sqrt(1.0 + 0.0027 * 0.0027 * ppfd**2))
 
 
 def HCHOLeafRes(stomatal_conductance: float) -> float:
@@ -423,8 +501,7 @@ def gamma_sm_kc(kc: float, kc_max: float, kc_min: float) -> float:
         maximum_factor
         * (1.0 / (1.0 + b1 * np.exp(k1 * (normalized_kc - 0.2))))
         * (
-            (1.0 - 1.0 / maximum_factor)
-            / (1.0 + b2 * np.exp(k2 * (1.3 - normalized_kc)))
+            (1.0 - 1.0 / maximum_factor) / (1.0 + b2 * np.exp(k2 * (1.3 - normalized_kc)))
             + 1.0 / maximum_factor
         )
     )

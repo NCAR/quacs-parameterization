@@ -11,12 +11,12 @@ physics remain in :mod:`src.MEGCAN`.
 from __future__ import annotations
 
 import configparser
-from dataclasses import dataclass
 import json
 import os
-from pathlib import Path
 import shutil
 import warnings
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal, NamedTuple
 
 import numpy as np
@@ -25,7 +25,6 @@ import pandas as pd
 from . import MEGCAN as canopy
 from . import MEGVEA as activity
 from . import TIMEFUNC as time_utils
-
 
 # Five-point Gaussian quadrature weights retained from the original model.
 _LAYER_WEIGHTS_5 = np.array(
@@ -124,9 +123,7 @@ class OutputOptions:
         if len(set(active_names)) != len(active_names):
             raise ValueError("Output filenames must be distinct")
         if self.show_diagnostic_figure and not self.create_diagnostic_figure:
-            raise ValueError(
-                "show_diagnostic_figure requires create_diagnostic_figure=true"
-            )
+            raise ValueError("show_diagnostic_figure requires create_diagnostic_figure=true")
         try:
             self.float_format % 1.23456789
         except (TypeError, ValueError) as error:
@@ -235,9 +232,7 @@ def _namelist_section(
     for existing_name in parser.sections():
         if existing_name.casefold() == section_name.casefold():
             return parser[existing_name]
-    raise ValueError(
-        f"Required namelist section '[{section_name}]' is missing"
-    )
+    raise ValueError(f"Required namelist section '[{section_name}]' is missing")
 
 
 def _namelist_path(raw_value: str, base_directory: Path) -> Path:
@@ -306,14 +301,10 @@ def load_namelist(path: Path) -> RunConfiguration:
         """Read a required non-empty string with a targeted error message."""
 
         if key not in section:
-            raise ValueError(
-                f"Required namelist item '[{section.name}] {key}' is missing"
-            )
+            raise ValueError(f"Required namelist item '[{section.name}] {key}' is missing")
         value = section.get(key, raw=True).strip()
         if not value:
-            raise ValueError(
-                f"Namelist item '[{section.name}] {key}' cannot be empty"
-            )
+            raise ValueError(f"Namelist item '[{section.name}] {key}' cannot be empty")
         return value
 
     def required_float(
@@ -326,9 +317,7 @@ def load_namelist(path: Path) -> RunConfiguration:
         try:
             return section.getfloat(key)
         except ValueError as error:
-            raise ValueError(
-                f"Namelist item '[{section.name}] {key}' must be numeric"
-            ) from error
+            raise ValueError(f"Namelist item '[{section.name}] {key}' must be numeric") from error
 
     def required_int(
         section: configparser.SectionProxy,
@@ -355,23 +344,14 @@ def load_namelist(path: Path) -> RunConfiguration:
             return section.getboolean(key)
         except ValueError as error:
             raise ValueError(
-                f"Namelist item '[{section.name}] {key}' must be 0/1, "
-                "true/false, yes/no, or on/off"
+                f"Namelist item '[{section.name}] {key}' must be 0/1, true/false, yes/no, or on/off"
             ) from error
 
     paths = ModelPaths(
-        meteorology=_namelist_path(
-            required_text(files, "meteorology"), base_directory
-        ),
-        emission_factors=_namelist_path(
-            required_text(files, "emission_factors"), base_directory
-        ),
-        pft_fractions=_namelist_path(
-            required_text(files, "pft_fractions"), base_directory
-        ),
-        output_directory=_namelist_path(
-            required_text(files, "output_directory"), base_directory
-        ),
+        meteorology=_namelist_path(required_text(files, "meteorology"), base_directory),
+        emission_factors=_namelist_path(required_text(files, "emission_factors"), base_directory),
+        pft_fractions=_namelist_path(required_text(files, "pft_fractions"), base_directory),
+        output_directory=_namelist_path(required_text(files, "output_directory"), base_directory),
     )
 
     controls = ControlParameters(
@@ -388,8 +368,7 @@ def load_namelist(path: Path) -> RunConfiguration:
     )
     if not -90.0 <= controls.latitude_deg <= 90.0:
         raise ValueError(
-            "SITE.Latitude must be between -90 and 90 degrees; received "
-            f"{controls.latitude_deg}"
+            f"SITE.Latitude must be between -90 and 90 degrees; received {controls.latitude_deg}"
         )
 
     model_options = ModelOptions(
@@ -400,12 +379,8 @@ def load_namelist(path: Path) -> RunConfiguration:
         co2_ppm=required_float(model, "co2_ppm"),
         kc_min=required_float(model, "kc_min"),
         kc_max=required_float(model, "kc_max"),
-        isoprene_molecular_weight_g_mol=required_float(
-            model, "isoprene_molecular_weight_g_mol"
-        ),
-        daytime_start_hour=required_float(
-            diagnostics, "daytime_start_hour"
-        ),
+        isoprene_molecular_weight_g_mol=required_float(model, "isoprene_molecular_weight_g_mol"),
+        daytime_start_hour=required_float(diagnostics, "daytime_start_hour"),
         daytime_end_hour=required_float(diagnostics, "daytime_end_hour"),
     )
 
@@ -413,23 +388,13 @@ def load_namelist(path: Path) -> RunConfiguration:
         all_species_filename=required_text(output, "all_species_filename"),
         isoprene_filename=required_text(output, "isoprene_filename"),
         metrics_filename=required_text(output, "metrics_filename"),
-        diagnostic_figure_filename=required_text(
-            output, "diagnostic_figure_filename"
-        ),
+        diagnostic_figure_filename=required_text(output, "diagnostic_figure_filename"),
         float_format=required_text(output, "float_format"),
         missing_value=required_text(output, "missing_value"),
-        create_diagnostic_figure=required_bool(
-            diagnostics, "create_diagnostic_figure"
-        ),
-        show_diagnostic_figure=required_bool(
-            diagnostics, "show_diagnostic_figure"
-        ),
-        copy_namelist_to_output=required_bool(
-            output, "copy_namelist_to_output"
-        ),
-        namelist_copy_filename=required_text(
-            output, "namelist_copy_filename"
-        ),
+        create_diagnostic_figure=required_bool(diagnostics, "create_diagnostic_figure"),
+        show_diagnostic_figure=required_bool(diagnostics, "show_diagnostic_figure"),
+        copy_namelist_to_output=required_bool(output, "copy_namelist_to_output"),
+        namelist_copy_filename=required_text(output, "namelist_copy_filename"),
     )
 
     return RunConfiguration(
@@ -465,9 +430,7 @@ def _find_column(
         if match is not None:
             return match
     if required:
-        raise ValueError(
-            "Missing required column. Expected one of: " + ", ".join(aliases)
-        )
+        raise ValueError("Missing required column. Expected one of: " + ", ".join(aliases))
     return None
 
 
@@ -596,12 +559,12 @@ def load_species_parameters(path: Path) -> SpeciesParameters:
     ldf_column = _find_column(frame, ("LDF", "Light Dependent Fraction"))
 
     names = tuple(_clean_text(value) for value in frame[category_column])
-    emission_factors = pd.to_numeric(
-        frame[emission_factor_column], errors="coerce"
-    ).to_numpy(dtype=float)
-    light_dependent_fraction = pd.to_numeric(
-        frame[ldf_column], errors="coerce"
-    ).to_numpy(dtype=float)
+    emission_factors = pd.to_numeric(frame[emission_factor_column], errors="coerce").to_numpy(
+        dtype=float
+    )
+    light_dependent_fraction = pd.to_numeric(frame[ldf_column], errors="coerce").to_numpy(
+        dtype=float
+    )
 
     if not names:
         raise ValueError("At least one species/activity class is required")
@@ -633,9 +596,7 @@ def load_pft_parameters(path: Path) -> PFTParameters:
     fraction_column = _find_column(frame, ("Fraction", "Fraction(%)", "Percent"))
 
     names = tuple(_clean_text(value) for value in frame[pft_column])
-    fractions = pd.to_numeric(frame[fraction_column], errors="coerce").to_numpy(
-        dtype=float
-    )
+    fractions = pd.to_numeric(frame[fraction_column], errors="coerce").to_numpy(dtype=float)
 
     if len(fractions) != canopy.N_CANOPY_TYPES:
         raise ValueError(
@@ -693,9 +654,7 @@ def precompute_meteorology(
 
     grouped = meteorology.groupby("day", sort=False)
     daily_mean_ppfd = grouped["ppfd"].transform("mean").to_numpy(dtype=float)
-    daily_mean_temperature = grouped["temperature_k"].transform("mean").to_numpy(
-        dtype=float
-    )
+    daily_mean_temperature = grouped["temperature_k"].transform("mean").to_numpy(dtype=float)
     previous_10_day_temperature = time_utils.map_previous_daily_mean(
         days,
         temperature_k,
@@ -917,9 +876,7 @@ def _stress_factors(
         else 1.0
     )
     gamma_high_wind = (
-        activity.gamma_hw(species_index, daily_max_wind_m_s)
-        if controls.high_wind_response
-        else 1.0
+        activity.gamma_hw(species_index, daily_max_wind_m_s) if controls.high_wind_response else 1.0
     )
     return gamma_high_temperature, gamma_low_temperature, gamma_high_wind
 
@@ -960,29 +917,19 @@ def _calculate_record_emissions(
         current_lai,
     )
     gamma_bidirectional = (
-        activity.gamma_laibidir(current_lai)
-        if controls.bidirectional_lai_response
-        else 1.0
+        activity.gamma_laibidir(current_lai) if controls.bidirectional_lai_response else 1.0
     )
 
     # CO2 response is controlled independently by GAMCO2_YN and applies only
     # to isoprene.
-    gamma_co2_isoprene = (
-        activity.gamma_co2(options.co2_ppm) if controls.co2_response else 1.0
-    )
+    gamma_co2_isoprene = activity.gamma_co2(options.co2_ppm) if controls.co2_response else 1.0
 
     light_sun = np.array(
-        [
-            activity.gamp(value, daily_mean_ppfd)
-            for value in canopy_state.sun_ppfd
-        ],
+        [activity.gamp(value, daily_mean_ppfd) for value in canopy_state.sun_ppfd],
         dtype=float,
     )
     light_shade = np.array(
-        [
-            activity.gamp(value, daily_mean_ppfd)
-            for value in canopy_state.shade_ppfd
-        ],
+        [activity.gamp(value, daily_mean_ppfd) for value in canopy_state.shade_ppfd],
         dtype=float,
     )
 
@@ -1052,8 +999,7 @@ def _calculate_record_emissions(
             )
             gamma_temperature_light += layer_weights[layer_index] * (
                 light_dependent_activity * light_dependent_fraction
-                + light_independent_activity
-                * (1.0 - light_dependent_fraction)
+                + light_independent_activity * (1.0 - light_dependent_fraction)
             )
 
         common_activity = (
@@ -1075,8 +1021,7 @@ def _calculate_record_emissions(
             common_activity *= gamma_bidirectional
 
         emissions[species_index] = (
-            common_activity
-            * species.emission_factors_nmol_m2_s[species_index]
+            common_activity * species.emission_factors_nmol_m2_s[species_index]
         )
 
     return emissions
@@ -1141,18 +1086,10 @@ def simulate(bundle: InputBundle, options: ModelOptions) -> SimulationResult:
             previous_lai=previous_lai,
             canopy_state=canopy_state,
             daily_mean_ppfd=precomputed.daily_mean_ppfd[record_index],
-            daily_mean_temperature_k=precomputed.daily_mean_temperature_k[
-                record_index
-            ],
-            previous_10_day_temperature_k=(
-                precomputed.previous_10_day_temperature_k[record_index]
-            ),
-            daily_max_temperature_k=precomputed.daily_max_temperature_k[
-                record_index
-            ],
-            daily_min_temperature_k=precomputed.daily_min_temperature_k[
-                record_index
-            ],
+            daily_mean_temperature_k=precomputed.daily_mean_temperature_k[record_index],
+            previous_10_day_temperature_k=(precomputed.previous_10_day_temperature_k[record_index]),
+            daily_max_temperature_k=precomputed.daily_max_temperature_k[record_index],
+            daily_min_temperature_k=precomputed.daily_min_temperature_k[record_index],
             daily_max_wind_m_s=precomputed.daily_max_wind_m_s[record_index],
             kc_7d=kc_7d[record_index],
             controls=controls,
@@ -1165,24 +1102,17 @@ def simulate(bundle: InputBundle, options: ModelOptions) -> SimulationResult:
     all_species.insert(0, "hour", hours)
     all_species.insert(0, "day", days)
 
-    nmol_s_to_mg_h = (
-        1.0e-9
-        * options.isoprene_molecular_weight_g_mol
-        * 1000.0
-        * 3600.0
-    )
+    nmol_s_to_mg_h = 1.0e-9 * options.isoprene_molecular_weight_g_mol * 1000.0 * 3600.0
     modeled_isoprene = emissions[:, 0] * nmol_s_to_mg_h
     isoprene = pd.DataFrame(
         {
             "day": days,
             "hour": hours,
-            "isoprene_observed_mg_m2_h": meteorology[
-                "isoprene_observed_mg_m2_h"
-            ].to_numpy(dtype=float),
-            "isoprene_modeled_mg_m2_h": modeled_isoprene,
-            "air_temperature_C": meteorology["temperature_c"].to_numpy(
+            "isoprene_observed_mg_m2_h": meteorology["isoprene_observed_mg_m2_h"].to_numpy(
                 dtype=float
             ),
+            "isoprene_modeled_mg_m2_h": modeled_isoprene,
+            "air_temperature_C": meteorology["temperature_c"].to_numpy(dtype=float),
             "ppfd_umol_m2_s": ppfd,
             # Corrected from the original output, which accidentally wrote
             # wind speed under the LAI header.
@@ -1211,12 +1141,8 @@ def calculate_isoprene_metrics(
         daytime_end_hour,
         inclusive="both",
     )
-    observed = isoprene.loc[daytime, "isoprene_observed_mg_m2_h"].to_numpy(
-        dtype=float
-    )
-    modeled = isoprene.loc[daytime, "isoprene_modeled_mg_m2_h"].to_numpy(
-        dtype=float
-    )
+    observed = isoprene.loc[daytime, "isoprene_observed_mg_m2_h"].to_numpy(dtype=float)
+    modeled = isoprene.loc[daytime, "isoprene_modeled_mg_m2_h"].to_numpy(dtype=float)
     observed_available = np.isfinite(observed)
     modeled_available = np.isfinite(modeled)
     valid = observed_available & modeled_available
@@ -1277,10 +1203,7 @@ def _all_species_output_table(result: SimulationResult) -> pd.DataFrame:
     table.columns = [
         "day [day of year]",
         "hour [local decimal hour]",
-        *[
-            f"{species_name} [nmol m-2 s-1]"
-            for species_name in species_columns
-        ],
+        *[f"{species_name} [nmol m-2 s-1]" for species_name in species_columns],
     ]
     return table
 
@@ -1291,22 +1214,17 @@ def _isoprene_output_table(result: SimulationResult) -> pd.DataFrame:
     column_names = {
         "day": "day [day of year]",
         "hour": "hour [local decimal hour]",
-        "isoprene_observed_mg_m2_h": (
-            "isoprene observed [mg m-2 h-1]"
-        ),
+        "isoprene_observed_mg_m2_h": ("isoprene observed [mg m-2 h-1]"),
         "isoprene_modeled_mg_m2_h": "isoprene modeled [mg m-2 h-1]",
         "air_temperature_C": "air temperature [deg C]",
         "ppfd_umol_m2_s": "PPFD [umol m-2 s-1]",
         "lai_m2_m2": "LAI [m2 m-2]",
         "swc10_m3_m3": "soil water content at 10 cm [m3 m-3]",
     }
-    missing_columns = [
-        column for column in column_names if column not in result.isoprene.columns
-    ]
+    missing_columns = [column for column in column_names if column not in result.isoprene.columns]
     if missing_columns:
         raise ValueError(
-            "The isoprene result is missing expected columns: "
-            + ", ".join(missing_columns)
+            "The isoprene result is missing expected columns: " + ", ".join(missing_columns)
         )
     return result.isoprene.rename(columns=column_names)
 
@@ -1391,8 +1309,7 @@ def save_diagnostic_figure(
     # Convert hour to a fraction of a day; the original code added raw hours to
     # DOY, which distorted the time coordinate.
     time_coordinate = (
-        subset["day"].to_numpy(dtype=float)
-        + subset["hour"].to_numpy(dtype=float) / 24.0
+        subset["day"].to_numpy(dtype=float) + subset["hour"].to_numpy(dtype=float) / 24.0
     )
 
     figure, axes = plt.subplots(1, 2, figsize=(12, 5.5), constrained_layout=True)

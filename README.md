@@ -33,7 +33,7 @@ A placeholder folder has only a README with the content of the target list.
 | Dust emission | [`dust`](quacs/dust/) | [GOCART (Ginoux et al., 2001)](quacs/dust/ginoux/) | implemented |
 | Dust emission | [`dust`](quacs/dust/) | [LS99-FENGSHA](quacs/dust/fengsha/) | placeholder |
 | Dust emission | [`dust`](quacs/dust/) | [Kok et al. (2014)](quacs/dust/kok/) | implemented |
-| Dust emission | [`dust`](quacs/dust/) | DEAD (Zender et al., 2003) | implemented (planned PR) |
+| Dust emission | [`dust`](quacs/dust/) | [DEAD (Zender et al., 2003)](quacs/dust/zender/) | implemented |
 | Dust emission | [`dust`](quacs/dust/) | Leung et al. (2023) | implemented (planned PR) |
 | Dry deposition | [`drydep`](quacs/drydep/) | Wesely (1989), from CAM | implemented (planned PR) |
 | Dry deposition | [`drydep`](quacs/drydep/) | [GEOS-Chem, simple](quacs/drydep/simple/) | implemented |

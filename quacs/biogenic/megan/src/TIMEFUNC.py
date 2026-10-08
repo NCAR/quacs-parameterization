@@ -28,17 +28,13 @@ def solar_elevation_angle(day_of_year: float, latitude_deg: float, hour: float) 
     the *solar elevation* angle because its sine is used directly downstream.
     """
 
-    sin_declination = -np.sin(0.40907) * np.cos(
-        6.28 * (day_of_year + 10.0) / 365.0
-    )
+    sin_declination = -np.sin(0.40907) * np.cos(6.28 * (day_of_year + 10.0) / 365.0)
     cos_declination = np.sqrt(1.0 - sin_declination**2)
 
     latitude_radians = latitude_deg / _DEGREES_PER_RADIAN
     term_a = np.sin(latitude_radians) * sin_declination
     term_b = np.cos(latitude_radians) * cos_declination
-    sin_elevation = term_a + term_b * np.cos(
-        2.0 * _PI_APPROX * (hour - 12.0) / 24.0
-    )
+    sin_elevation = term_a + term_b * np.cos(2.0 * _PI_APPROX * (hour - 12.0) / 24.0)
 
     # Numerical roundoff can produce values just outside [-1, 1].
     sin_elevation = np.clip(sin_elevation, -1.0, 1.0)
@@ -51,7 +47,9 @@ def solar_eccentricity_factor(day_of_year: float) -> float:
     return float(1.0 + 0.033 * np.cos(2.0 * 3.14 * (day_of_year - 10.0) / 365.0))
 
 
-def partition_solar_radiation(solar_w_m2: float, maximum_solar_w_m2: float) -> tuple[float, float, float, float]:
+def partition_solar_radiation(
+    solar_w_m2: float, maximum_solar_w_m2: float
+) -> tuple[float, float, float, float]:
     """Partition solar radiation into direct/diffuse visible and near-IR terms.
 
     Parameters
@@ -75,17 +73,13 @@ def partition_solar_radiation(solar_w_m2: float, maximum_solar_w_m2: float) -> t
         transmissivity = solar_w_m2 / maximum_solar_w_m2
 
     # Diffuse fraction based on Lizaso et al. (2005), as in the source code.
-    diffuse_fraction = 0.156 + 0.86 / (
-        1.0 + np.exp(11.1 * (transmissivity - 0.53))
-    )
+    diffuse_fraction = 0.156 + 0.86 / (1.0 + np.exp(11.1 * (transmissivity - 0.53)))
 
     # Visible (PPFD) fraction based on Goudriaan and van Laar (1994).
     visible_fraction = 0.55 - transmissivity * 0.12
 
     # Diffuse visible fraction based on Jacovides et al. (2007).
-    visible_diffuse_fraction = diffuse_fraction * (
-        1.06 + transmissivity * 0.4
-    )
+    visible_diffuse_fraction = diffuse_fraction * (1.06 + transmissivity * 0.4)
     visible_diffuse_fraction = min(visible_diffuse_fraction, 1.0)
 
     visible = visible_fraction * solar_w_m2
@@ -133,11 +127,7 @@ def previous_daily_mean(
         selected = value_array[day_array == current_day]
         return float(np.nanmean(selected))
 
-    first_window_day = (
-        current_day - window_days
-        if day_range >= float(window_days)
-        else start_day
-    )
+    first_window_day = current_day - window_days if day_range >= float(window_days) else start_day
     window = np.arange(first_window_day, current_day)
     daily_means = np.full(window.size, np.nan, dtype=float)
 
@@ -184,6 +174,7 @@ def map_previous_daily_mean(
 # ---------------------------------------------------------------------------
 # Backward-compatible names used by the original main_program.py
 # ---------------------------------------------------------------------------
+
 
 def Calcbeta(Day: float, Lat: float, Hour: float) -> float:
     """Legacy alias of :func:`solar_elevation_angle`."""

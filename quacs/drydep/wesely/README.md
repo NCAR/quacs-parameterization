@@ -120,6 +120,17 @@ pytest quacs/drydep/wesely
 
 ## References
 
-- Wesely, M. L. (1989). Parameterization of surface resistances to gaseous dry deposition in regional-scale numerical models. Atmos. Environ., 23, 1293-1304. https://doi.org/10.1016/0004-6981(89)90153-4
-- Walcek, C. J., Brost, R. A., Chang, J. S., and Wesely, M. L. (1986). SO2, sulfate and HNO3 deposition velocities computed using regional landuse and meteorological data. Atmos. Environ., 20, 949-964. https://doi.org/10.1016/0004-6981(86)90279-9
-- Sander, R. (2015). Compilation of Henry's law constants (version 4.0) for water as solvent. Atmos. Chem. Phys., 15, 4399-4981. https://doi.org/10.5194/acp-15-4399-2015
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+Cited in the code:
+
+- Wesely (1989), Atmos. Environ., 23, 1293-1304
+- Walcek et al. (1986), Atmos. Environ., 20, 949-964
+- Sheih et al. (source of Table 2, with Walcek et al. (1986))
+- Sanderson et al. 2003 (soil moisture tables for H2 and CO)
+- Sander (2015) Henry's Law compilation
+- CAM `mo_drydep.F90` (original Fortran by P. Hess, rewritten in F90 by JFL, modified for MOZART-2 by JFL)
+
+From the target parameterization list:
+
+- Wesely, M. L.: Parameterization of Surface Resistances to Gaseous Dry Deposition in Regional-Scale Numerical-Models, Atmos. Environ., 23, 1293–1304, https://doi.org/10.1016/00046981(89)90153-4, 1989.

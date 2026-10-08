@@ -20,7 +20,7 @@ MICM does the time integration.
 | Field | Value |
 |---|---|
 | Research area | Tropospheric and lower-stratospheric ozone, halogens, methane lifetime, oxidation capacity |
-| Scheme specifics | CESM2-SLH sea-salt dehalogenation, CAM reactions `het_ss_0`, `het_ss_1`, `het_ss_2` (`mo_usrrxt.F90`). Part of the VSLS scheme (Ordóñez et al., 2012; Fernandez et al., 2014). |
+| Scheme specifics | CESM2-SLH sea-salt dehalogenation, CAM reactions `het_ss_0`, `het_ss_1`, `het_ss_2` (`mo_usrrxt.F90`). Part of the VSLS scheme (Ordonez et al., 2012; Fernandez et al., 2014). |
 | External datasets | None for this component |
 | Information from MPAS-A | Air temperature, mid-layer pressure, latitude, ocean plus sea-ice fraction, calendar day, sea-salt surface area density |
 | Other inputs | Uptake coefficients (gamma) and product yields, depletion factor bounds, `SSAdehal_ScalingFactor` (CAM namelist, default 1.0) |
@@ -143,14 +143,18 @@ pytest quacs/vsls/cesm2_slh
 
 ## References
 
-CAM source files (ESCOMP/CAM, `cam_development` branch):
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
 
-- `src/chemistry/mozart/mo_usrrxt.F90`: gamma values, DF, masks, rate form
-- `src/chemistry/mozart/mo_slh_routines.F90`: default `SSAdehal_ScalingFactor`
-- `src/chemistry/pp_trop_strat_mam4_slh/chem_mech.in`: products and yields
+Cited in the code:
 
-Literature that the QUACS VSLS template cites:
+- CAM `src/chemistry/mozart/mo_usrrxt.F90`: gamma values, DF, masks, rate form
+- CAM `src/chemistry/mozart/mo_slh_routines.F90`: default `SSAdehal_ScalingFactor`
+- CAM `src/chemistry/pp_trop_strat_mam4_slh/chem_mech.in`: products and yields
+- Yang et al., 2005, as cited in CAM (bromine depletion factor)
+- Ordonez et al. (2012, supplement)
+- Fernandez et al. (2014)
 
-- Ordóñez, C., et al. (2012). Bromine and iodine chemistry in a global chemistry-climate model: description and evaluation of very short-lived oceanic sources. Atmos. Chem. Phys., 12, 1423-1447. https://doi.org/10.5194/acp-12-1423-2012
-- Fernandez, R. P., et al. (2014). Bromine partitioning in the tropical tropopause layer: implications for stratospheric injection. Atmos. Chem. Phys., 14, 13391-13410. https://doi.org/10.5194/acp-14-13391-2014
-- Yang, X., et al. (2005). Tropospheric bromine chemistry and its impacts on ozone: A model study. J. Geophys. Res., 110, D23311. https://doi.org/10.1029/2005JD006244
+From the target parameterization list:
+
+- Ordonez et al. 2012 (Supplement), Fernandez et al. (2014)
+- CAM-chem implementation of user defined reaction: mo_usrrxt.F90

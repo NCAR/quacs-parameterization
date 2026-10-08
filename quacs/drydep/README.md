@@ -4,7 +4,7 @@ Schemes that compute the dry deposition velocity of gases and the loss that it c
 
 | Scheme | Description | Status |
 |---|---|---|
-| `wesely` (planned PR) | Wesely (1989), from CAM mo_drydep.F90 | implemented |
+| [`wesely`](wesely/) | Wesely (1989), from CAM mo_drydep.F90 | implemented |
 | [`simple`](simple/) | GEOS-Chem offline dry deposition, Fortran translation | implemented |
 | [`lhs`](lhs/) | GEOS-Chem offline dry deposition with Latin hypercube sampling | implemented |
 

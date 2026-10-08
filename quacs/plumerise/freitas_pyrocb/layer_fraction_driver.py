@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from quacs.plumerise.tables import lookup_vegetation_split
+from quacs.plumerise.freitas_pyrocb.tables import lookup_vegetation_split
 
 PYROCB_FRACTION = 0.5
 
@@ -69,9 +69,7 @@ def combine_layer_fractions(
     pyrocb_layer_fraction,
 ):
     if not (
-        len(smoldering_layer_fraction)
-        == len(flaming_layer_fraction)
-        == len(pyrocb_layer_fraction)
+        len(smoldering_layer_fraction) == len(flaming_layer_fraction) == len(pyrocb_layer_fraction)
     ):
         raise ValueError("layer fractions must share length")
     return (
@@ -107,11 +105,7 @@ def layer_fraction_driver(
         injectH_top_m,
     )
     pyrocb_layer_fraction = zero_layer_fraction(layer_bounds)
-    if (
-        pyrocb_flag
-        and injectH_pyroCb_base_m is not None
-        and injectH_pyroCb_top_m is not None
-    ):
+    if pyrocb_flag and injectH_pyroCb_base_m is not None and injectH_pyroCb_top_m is not None:
         pyrocb_layer_fraction = top_hat_overlap_fraction(
             layer_bounds,
             injectH_pyroCb_base_m,

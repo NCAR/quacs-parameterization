@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quacs.plumerise import compute_wildfire_profile_fraction_driver
+from quacs.plumerise.freitas_pyrocb import compute_wildfire_profile_fraction_driver
 
 
 def synthetic_profile_inputs():

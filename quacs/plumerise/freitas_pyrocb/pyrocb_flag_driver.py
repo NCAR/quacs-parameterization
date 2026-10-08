@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 
-from quacs.plumerise.tables import lookup_heat_flux
+from quacs.plumerise.freitas_pyrocb.tables import lookup_heat_flux
 
 MIN_FIRE_SIZE = 0.0
 F_CONV = 0.55
@@ -152,8 +152,10 @@ def _temperature_c_from_theta_e_saturated_and_pressure(pressure_hpa, theta_e):
 
 
 def _virtual_temperature_c(t_c, dp_c, pressure_hpa):
-    mixing_ratio = EPSILON * _vapor_pressure_liquid_water(dp_c) / (
-        pressure_hpa - _vapor_pressure_liquid_water(dp_c)
+    mixing_ratio = (
+        EPSILON
+        * _vapor_pressure_liquid_water(dp_c)
+        / (pressure_hpa - _vapor_pressure_liquid_water(dp_c))
     )
     theta = _theta_kelvin(pressure_hpa, t_c)
     virtual_theta = theta * (1.0 + mixing_ratio / EPSILON) / (1.0 + mixing_ratio)
@@ -223,7 +225,9 @@ def _entrained_mixed_layer(pressure, z, t_c, qv):
     raise ValueError("could not find entrained mixed-layer LCL crossing")
 
 
-def _min_temperature_diff_to_max_cloud_top_temperature(pressure, t_c, qv, starting_pressure, theta_e):
+def _min_temperature_diff_to_max_cloud_top_temperature(
+    pressure, t_c, qv, starting_pressure, theta_e
+):
     diffs = []
     selected_count = 0
     for p, temp, q in zip(pressure, t_c, qv):
@@ -363,9 +367,7 @@ def _entrained_layer_mean_wind_speed(z_fc, pressure, z, u, v):
 def _pft_formula(z_fc, p_fc, mean_wind, dtheta_fc, theta_fc, p_sfc):
     z_fc_km = z_fc / 1000.0
     p_c = p_sfc - (p_sfc - p_fc) / (1.0 + 0.32 * 0.4)
-    density = p_c / 10.0 / (R_DRY_AIR * theta_fc) * (
-        (1000.0 / p_c) ** (R_DRY_AIR / CP_DRY_AIR)
-    )
+    density = p_c / 10.0 / (R_DRY_AIR * theta_fc) * ((1000.0 / p_c) ** (R_DRY_AIR / CP_DRY_AIR))
     return float(PFT_CONST * density * (z_fc_km**2) * mean_wind * dtheta_fc)
 
 

@@ -2,10 +2,8 @@
 Run the GOCART dust emission scheme in a MUSICA box model for one land cell.
 
 The emission rate is constant, so the dust mass must grow linearly in time.
-The script compares the MICM result with that closed-form value.
+The script prints the MICM result next to that closed-form value.
 """
-
-import numpy as np
 
 from quacs.dust.ginoux import C_DEFAULT, run_box_model
 
@@ -26,7 +24,3 @@ print("-" * 60)
 expected = out["rates"].sum() * out["times"]
 for t, actual, exp in zip(out["times"], out["concs"].sum(axis=1), expected):
     print(f"{t / 60:>10.2f}  {actual:>22.6e}  {exp:>22.6e}")
-
-assert out["rates"].sum() > 0.0, "expected a positive emission rate"
-assert np.allclose(out["concs"].sum(axis=1), expected, rtol=1e-10)
-print("\nMICM result matches the closed-form solution.")

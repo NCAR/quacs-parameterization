@@ -117,4 +117,12 @@ pytest quacs/tagged_tracers/voc_nox
 
 ## References
 
-- Lapaşcu, A. and Butler, T. (2019). Source attribution of European surface O3 using a tagged O3 mechanism. Atmos. Chem. Phys., 19, 14535-14558. https://doi.org/10.5194/acp-19-14535-2019
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+Cited in the code:
+
+- None.
+
+From the target parameterization list:
+
+- “Source attribution of European surface O3 using a tagged O3 mechanism” Lapaşcu & Butler, 2019 (https://doi.org/10.5194/acp-19-14535-2019)

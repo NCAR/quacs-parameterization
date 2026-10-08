@@ -118,7 +118,15 @@ pytest quacs/plumerise/freitas_pyrocb
 
 ## References
 
-- Freitas, S. R., Longo, K. M., Trentmann, J., and Latham, D. (2010). Technical Note: Sensitivity of 1-D smoke plume rise models to the inclusion of environmental wind drag. Atmos. Chem. Phys., 10, 585-594. https://doi.org/10.5194/acp-10-585-2010
-- Peterson, D. A., Hyer, E. J., Campbell, J. R., Solbrig, J. E., and Fromm, M. D. (2017). A conceptual model for development of intense pyrocumulonimbus in western North America. Mon. Weather Rev., 145, 2235-2255. https://doi.org/10.1175/MWR-D-16-0232.1
-- Tory, K. J., Thurston, W., and Kepert, J. D. (2018). Thermodynamics of pyrocumulus: a conceptual study. Mon. Weather Rev., 146, 2579-2598. https://doi.org/10.1175/MWR-D-17-0377.1
-- Ma and Jones (2025). (Full citation to be added.)
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+Cited in the code:
+
+- Freitas (plume rise model)
+- Tory and Kepert (PFT formula)
+
+From the target parameterization list:
+
+- Freitas et al. (2010) (Freitas-1D plume rise)
+- Peterson et al. (2017) (pyroCb trigger)
+- Ma and Jones (2025) (link the smoke updraft back to the host model)

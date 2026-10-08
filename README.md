@@ -43,7 +43,7 @@ A placeholder folder has only a README with the content of the target list.
 | Trace gas wet deposition | [`wetdep`](quacs/wetdep/) | [Neu et al. (2012)](quacs/wetdep/gas_neu/) | placeholder |
 | MEGAN biogenic emissions | [`biogenic`](quacs/biogenic/) | [MEGAN 3.0](quacs/biogenic/megan/) | implemented |
 | pyroCb-aware plume rise | [`plumerise`](quacs/plumerise/) | [Freitas et al. (2010) with pyroCb trigger](quacs/plumerise/freitas_pyrocb/) | in progress |
-| VOC and NOx tagged tracers | [`tagged_tracers`](quacs/tagged_tracers/) | Lapaşcu & Butler (2019) | in progress (planned PR) |
+| VOC and NOx tagged tracers | [`tagged_tracers`](quacs/tagged_tracers/) | [Lapaşcu & Butler (2019), CO prototype](quacs/tagged_tracers/voc_nox/) | in progress |
 | Lightning flash rate, parameterized convection | [`lightning`](quacs/lightning/) | [Price & Rind (1992)](quacs/lightning/flash_rate_price_rind/) | placeholder |
 | Lightning flash rate, resolved convection | [`lightning`](quacs/lightning/) | [Cummings et al. (2024)](quacs/lightning/flash_rate_cummings/) | placeholder |
 | Lightning NOx, parameterized convection | [`lightning`](quacs/lightning/) | [Ott et al. (2010)](quacs/lightning/lnox_ott/) | placeholder |

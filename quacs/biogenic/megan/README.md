@@ -95,6 +95,16 @@ pytest quacs/biogenic/megan
 
 ## References
 
-- Guenther, A. B., Jiang, X., Heald, C. L., Sakulyanontvittaya, T., Duhl, T., Emmons, L. K., and Wang, X. (2012). The Model of Emissions of Gases and Aerosols from Nature version 2.1 (MEGAN2.1): an extended and updated framework for modeling biogenic emissions. Geosci. Model Dev., 5, 1471-1492. https://doi.org/10.5194/gmd-5-1471-2012
-- Guenther, A., Jiang, X., Shah, T., Huang, L., Kemball-Cook, S., and Yarwood, G. (2020). Model of Emissions of Gases and Aerosol from Nature Version 3 (MEGAN3) for Estimating Biogenic Emissions. In: Air Pollution Modeling and its Application XXVI, Springer. (DOI to be added.)
-- MEGAN home page: https://bai.ess.uci.edu/megan
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+Cited in the code:
+
+- Lizaso et al. (2005) (diffuse fraction)
+- Jacovides et al. (2007) (diffuse visible fraction)
+
+From the target parameterization list:
+
+- https://bai.ess.uci.edu/megan
+- Implementation of online MEGAN in CESM and WRF-Chem
+- Guenther et al. (2020)
+- Guenther et al. (2012) (MEGAN2.1)

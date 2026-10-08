@@ -8,6 +8,6 @@ Schemes that compute the vertical flux of mineral dust from the surface.
 | [`fengsha`](fengsha/) | LS99-FENGSHA, Ma et al. (2019), CMAQ 5.5 | placeholder |
 | [`kok`](kok/) | Kok et al. (2014), CESM2/CLM5 | implemented |
 | [`zender`](zender/) | DEAD, Zender et al. (2003), CLM4 | implemented |
-| `leung` (planned PR) | Leung et al. (2023, 2024), CESM2/CLM5 | implemented |
+| [`leung`](leung/) | Leung et al. (2023, 2024), CESM2/CLM5 | implemented |
 
 Each scheme folder follows the layout in [CONTRIBUTING.md](../../CONTRIBUTING.md).

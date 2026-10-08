@@ -23,7 +23,7 @@ Three lognormal source modes then split the flux into the bins 0.1–1, 1–2.5,
 | Other inputs | Threshold friction velocity factor `tmp1` and the source-to-sink overlap matrix `ovr_src_snk_mss`. `precompute_constants()` computes both. |
 | Information to MPAS-A | Dust emission flux `F_p` [x, y, 4 bins]. It must be added to the dust species of the host model. |
 | Considerations | The 4 transport bins must be mapped to the dust species or bins of the host model. The clay fraction in the sandblasting efficiency is capped at 0.2. Dust has dry deposition. |
-| Equations and references | u*_t = tmp1 / sqrt(rho) f_w; u*_s = u* + 0.003 (u10 - u10_t)^2; Q = c rho u*_s^3 / g (1 - u*_t/u*_s)(1 + u*_t/u*_s)^2 f_bare; F_tot = Q 100 10^(13.4 min(f_clay, 0.2) - 6); F_p[n] = sum_m ovr_src_snk_mss[m, n] F_tot |
+| Equations and references | Zender et al. (2003a); Marticorena & Bergametti (1995); Fécan et al. (1999). Full citations are in [References](#references). |
 
 ## Classification
 

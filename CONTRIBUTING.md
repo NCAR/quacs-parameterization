@@ -52,7 +52,9 @@ The README is the contract of the scheme. It must have these parts:
   The source is MPAS-A, external dataset, constant, or other parameterization.
 - An **Outputs** table. Each row gives the name, description, units, shape, and destination.
   The destination is MPAS-A state, MICM rate parameter, or diagnostic.
-- **References**.
+- **References**. Write each reference exactly as the code or the target parameterization list
+  gives it. Put the references from the code and the references from the target list in different lists.
+  Do not add titles, DOIs, or page numbers that the source does not give.
 
 Use the same names in the Inputs and Outputs tables as the arguments and return values in the code.
 

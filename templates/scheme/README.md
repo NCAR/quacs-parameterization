@@ -76,4 +76,13 @@ pytest quacs/<process>/<scheme>
 
 ## References
 
-- Author, A. (Year). Title. Journal, Volume, Pages. https://doi.org/...
+<!-- Write each reference exactly as the code or the target parameterization list gives it.
+     Do not look up titles, DOIs, or page numbers that the source does not give. -->
+
+Cited in the code:
+
+- Author et al. (Year)
+
+From the target parameterization list:
+
+- Author et al. (Year)

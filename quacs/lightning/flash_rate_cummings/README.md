@@ -53,4 +53,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Cummings, K. A., et al. (2024). (Full citation to be added.)
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- Cummings et al. (2024); information taken from WRF-Chem

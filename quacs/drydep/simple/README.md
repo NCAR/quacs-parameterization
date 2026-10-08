@@ -76,5 +76,18 @@ Integrates Hg0 concentration over ~5 e-folding lifetimes and prints a time serie
 
 ## References
 
-- Wesely, M. L. (1989). Parameterization of surface resistances to gaseous dry deposition in regional-scale numerical models. Atmos. Environ., 23, 1293-1304. https://doi.org/10.1016/0004-6981(89)90153-4
-- Feinberg, A., et al. (2022). Evaluating atmospheric mercury (Hg) uptake by vegetation in a chemistry-transport model. Environ. Sci.: Processes Impacts, 24, 1303-1318. https://doi.org/10.1039/D2EM00032F
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+Cited in the code:
+
+- Wesely [1989]
+- Wang et al., JGR, 1998
+- Offline GEOS-Chem dry deposition code by Ari Feinberg (`@author: arifeinberg`)
+
+From the target parameterization list:
+
+- Wesely, M. L.: Parameterization of Surface Resistances to Gaseous Dry Deposition in Regional-Scale Numerical-Models, Atmos. Environ., 23, 1293–1304, https://doi.org/10.1016/00046981(89)90153-4, 1989.
+
+From the earlier repository README:
+
+- Wesely (1989); Feinberg et al. (2022)

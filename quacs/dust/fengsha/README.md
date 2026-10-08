@@ -53,6 +53,12 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Ma, S., et al. (2019). LS99-FENGSHA. (Full citation to be added.)
-- Foroutan, H., et al. (2017). Development and evaluation of a physics-based windblown dust emission scheme implemented in the CMAQ modeling system. J. Adv. Model. Earth Syst., 9, 585-608. https://doi.org/10.1002/2016MS000823
-- Fécan, F., Marticorena, B., and Bergametti, G. (1999). Ann. Geophys., 17, 149-157. https://doi.org/10.1007/s00585-999-0149-7
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- Ma et al., 2019
+- Foroutan et al., 2017 (also the roughness length z0 from FPAR)
+- CMAQ 5.5
+- Kang et al., 2011 (lookup table of soil parameters)
+- Fecan et al., 1999 (soil moisture correction)

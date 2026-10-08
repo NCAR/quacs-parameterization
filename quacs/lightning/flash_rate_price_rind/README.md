@@ -54,5 +54,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Price, C. and Rind, D. (1992). A simple lightning parameterization for calculating global lightning distributions. J. Geophys. Res., 97, 9919-9933. https://doi.org/10.1029/92JD00719
-- Wong, J., et al. (2013). Sensitivity of real-data simulations of lightning to model resolution. Geosci. Model Dev., 6, 429-443. https://doi.org/10.5194/gmd-6-429-2013
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- Price and Rind (1992); Wong et al. (2013); information taken from WRF-Chem

@@ -54,4 +54,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Ghan, S. J. and Zaveri, R. A. (2007). Parameterization of optical properties for hydrated internally mixed aerosol. J. Geophys. Res., 112, D10201. https://doi.org/10.1029/2006JD007927
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- Ghan & Zaveri (2007)

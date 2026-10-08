@@ -21,7 +21,7 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Hygroscopicity (kappa) and mean number radius (r_m) |
 | Information to MPAS-A | Water-friendly aerosol (WFA) and ice-friendly aerosol (IFA) number concentration [x, y, z] |
 | Considerations | Derive r_m and kappa from GOCART-2G assumptions, not from fixed values. Other processes, such as coagulation, change the CCN size. |
-| Equations and references | CCN activation lookup table from a parcel model [T, W, Nt, kappa, r_m] (Eidhammer et al., 2009) |
+| Equations and references | CCN activation lookup table from a parcel model [T, W, Nt, kappa, r_m] (Eldhammer et al. 2009, as the target list spells it) |
 
 ## Classification
 
@@ -53,6 +53,10 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Thompson, G. and Eidhammer, T. (2014). A study of aerosol impacts on clouds and precipitation development in a large winter cyclone. J. Atmos. Sci., 71, 3636-3658. https://doi.org/10.1175/JAS-D-13-0305.1
-- Eidhammer, T., DeMott, P. J., and Kreidenweis, S. M. (2009). A comparison of heterogeneous ice nucleation parameterizations using a parcel model framework. J. Geophys. Res., 114, D06202. https://doi.org/10.1029/2008JD011095
-- Collow, A., et al. (2024). GOCART-2G. (Full citation to be added.)
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- GOCART2G scheme (Collow et al., 2024)
+- Thompson aerosol aware scheme (Thompson at el. 2014)
+- CCN activation LUT from parcel model [T, W, Nt, κ, rm] (Eldhammer et al. 2009)

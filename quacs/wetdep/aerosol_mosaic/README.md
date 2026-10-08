@@ -21,7 +21,7 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Aerosol density, bin sections, below-cloud scavenging coefficients |
 | Information to MPAS-A | Updated aerosol concentrations; column change from scavenging (diagnostic) |
 | Considerations | The scheme needs the vertical structure of the host model. Impaction scavenging starts at the model top and goes down to get the precipitation flux in each layer. |
-| Equations and references | WRF-Chem module_mosaic_wetscav.F (to be added) |
+| Equations and references | The target list gives no equations or references. |
 
 ## Classification
 
@@ -53,4 +53,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Easter, R. C., et al. (2004). MIRAGE: Model description and evaluation of aerosols and trace gases. J. Geophys. Res., 109, D20210. https://doi.org/10.1029/2004JD004571
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- PNNL code in WRF-Chem for MOSAIC sectional scheme. The target list gives no paper.

@@ -52,4 +52,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Flanner, M. G., et al. (2021). SNICAR-ADv3: a community tool for modeling spectral snow albedo. Geosci. Model Dev., 14, 7673-7704. https://doi.org/10.5194/gmd-14-7673-2021
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- Flanner et al., 2021, SNICAR-ADV 3 solver

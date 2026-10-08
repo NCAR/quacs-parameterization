@@ -53,4 +53,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Ott, L. E., et al. (2010). Production of lightning NOx and its vertical distribution calculated from three-dimensional cloud-scale chemical transport model simulations. J. Geophys. Res., 115, D04301. https://doi.org/10.1029/2009JD011880
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- Ott et al. (2010), JGR; information taken from WRF-Chem

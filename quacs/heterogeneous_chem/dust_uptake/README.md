@@ -51,6 +51,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Jacob, D. J. (2000). Heterogeneous chemistry and tropospheric ozone. Atmos. Environ., 34, 2131-2159. https://doi.org/10.1016/S1352-2310(99)00462-8
-- Dentener, F. J., et al. (1996). Role of mineral aerosol as a reactive surface in the global troposphere. J. Geophys. Res., 101, 22869-22889. https://doi.org/10.1029/96JD01818
-- Bauer, S. E., et al. (2004). Global modeling of heterogeneous chemistry on mineral aerosol surfaces. J. Geophys. Res., 109, D02304. https://doi.org/10.1029/2003JD003868
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- Jacob 2000, Bauer et al,, 2004, Dentener et al., 1996, Zhang et al., 2025, Tang et al., 2017. Reactive uptake of gases on mineral dust.

@@ -53,4 +53,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- DeCaria, A. J., et al. (2000). A cloud-scale model study of lightning-generated NOx in an individual thunderstorm during STERAO-A. J. Geophys. Res., 105, 11601-11616. https://doi.org/10.1029/2000JD900033
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- DeCaria et al. (2000), JGR; information taken from WRF-Chem

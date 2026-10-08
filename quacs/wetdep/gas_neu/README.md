@@ -21,7 +21,7 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Gas-aqueous fraction from Henry's law coefficients, retention fraction in freezing drops, molecular weight, effective Henry's law coefficient |
 | Information to MPAS-A | Updated chemical species; HNO3 column change from scavenging (diagnostic) |
 | Considerations | The scheme uses different equations for the all-liquid, mixed-phase, and all-ice regions of a storm. |
-| Equations and references | Neu and Prather (2012) |
+| Equations and references | Different equations for different parts of the storm (all-liquid region, mixed-phase region, all-ice region) |
 
 ## Classification
 
@@ -53,4 +53,8 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 
 ## References
 
-- Neu, J. L. and Prather, M. J. (2012). Toward a more physical representation of precipitation scavenging in global chemistry models: cloud overlap and ice physics and their impact on tropospheric ozone. Atmos. Chem. Phys., 12, 3289-3310. https://doi.org/10.5194/acp-12-3289-2012
+This section shows each reference exactly as its source gives it. Nobody added titles, DOIs, or page numbers. Check them before you cite this scheme.
+
+From the target parameterization list:
+
+- Neu et al. (2012) Code in WRF-Chem for MOZART chemistry schemes.

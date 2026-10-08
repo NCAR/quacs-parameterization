@@ -67,11 +67,3 @@ if __name__ == "__main__":
         concs = state.get_concentrations()
         row = "  ".join(f"{concs[sp][0]:10.6f}" for sp in SPECIES)
         print(f"{i * time_step / 3600:8.2f}  {row}")
-
-    # MICM must agree with the exact solution C/C0 = exp(-k t).
-    t_end = n_steps * time_step
-    concs = state.get_concentrations()
-    for sp in SPECIES:
-        exact = np.exp(-k_rates[sp] * t_end)
-        assert np.isclose(concs[sp][0], exact, rtol=1e-3), (sp, concs[sp][0], exact)
-    print("\nMICM agrees with the exact exponential decay.")

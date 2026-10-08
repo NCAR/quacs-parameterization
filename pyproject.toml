@@ -14,12 +14,15 @@ dependencies = [
     "xarray>=2023.1",
     "scipy>=1.10",
     "netcdf4",
+    "matplotlib",
     "musica",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "nbmake>=1.5",
+    "ipykernel",
     "ruff>=0.4",
 ]
 
@@ -28,7 +31,8 @@ where = ["."]
 include = ["quacs*"]
 
 [tool.pytest.ini_options]
-testpaths = ["quacs"]
+testpaths = ["tests", "quacs"]
+addopts = "--nbmake"
 
 [tool.ruff]
 line-length = 100

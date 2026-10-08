@@ -1,10 +1,67 @@
-# drydep/lhs
+# drydep/lhs: GEOS-Chem dry deposition with Latin hypercube sampling
 
-Extends the simple MUSICA dry deposition box model with Latin Hypercube Sampling (LHS) to explore sensitivity across a wide range of atmospheric conditions. Runs Hg0, SO2, and O3 simultaneously and produces sensitivity plots of deposition velocity and loss rate against each input dimension.
+| | |
+|---|---|
+| **Status** | implemented |
+| **Target class** | Dry Deposition |
+| **Contributors** | Ari Feinberg (original Python), QUACS team |
+| **Original source** | https://github.com/arifein/offline-drydep |
 
-This uses the [GEOS-Chem standalone drypdep scheme](https://github.com/arifein/offline-drydep), but
-using a refactored version of the code to look more like python and operate on data rather than
-on indexes.
+This scheme is a rewrite of the GEOS-Chem dry deposition code that operates on data, not on indexes. It supports many species, flexible land cover, and many cells at once. A Latin hypercube sampling (LHS) driver explores the sensitivity of the deposition velocity to the inputs for Hg0, SO2, and O3.
+
+## Target parameterization template
+
+| Field | Value |
+|---|---|
+| Research area | Removal of pollutants from the atmosphere, air quality |
+| Scheme specifics | GEOS-Chem dry deposition (Wesely, 1989, with GEOS-Chem updates), from the [offline GEOS-Chem dry deposition code](https://github.com/arifein/offline-drydep) |
+| External datasets | Olson 2001 land cover and its dry deposition coefficients (`quacs/drydep/data/Olson_2001_Drydep_Inputs.nc`) |
+| Information from MPAS-A | Surface temperature, pressure, radiation, cloud fraction, albedo, friction velocity, roughness, 10-m wind, air density, sensible heat flux |
+| Other inputs | Species Henry's law constant, reactivity factor, molar mass |
+| Information to MPAS-A | Dry deposition velocity and first-order loss rate for each species |
+| Considerations | The surface layer is a well-mixed box. The loss rate is k = v_d / H. |
+| Equations and references | Wesely (1989); Feinberg et al. (2022) |
+
+## Classification
+
+| Dimension | Value |
+|---|---|
+| Complexity | complex |
+| Solving strategy | supplies rates to the solver |
+| Aerosol representation | none |
+| Grid | 0-D |
+| Interdependence | standalone |
+
+## Inputs
+
+Source is one of: MPAS-A, external dataset, constant, other parameterization.
+The meteorological inputs are keys of the `met` dictionary.
+
+| Name | Description | Units | Shape | Source |
+|---|---|---|---|---|
+| `TC0` | Surface air temperature | K | scalar or `(ncell,)` | MPAS-A |
+| `CFRAC` | Cloud fraction | 1 | scalar or `(ncell,)` | MPAS-A |
+| `RADIAT` | Incident shortwave radiation | W m-2 | scalar or `(ncell,)` | MPAS-A |
+| `AZO` | Roughness height | m | scalar or `(ncell,)` | MPAS-A |
+| `USTAR` | Friction velocity | m s-1 | scalar or `(ncell,)` | MPAS-A |
+| `PRESSU` | Surface pressure | Pa | scalar or `(ncell,)` | MPAS-A |
+| `SUNCOS_MID` | Cosine of the solar zenith angle | 1 | scalar or `(ncell,)` | MPAS-A |
+| `ALBD` | Surface albedo | 1 | scalar or `(ncell,)` | MPAS-A |
+| `U10M`, `V10M` | 10-m wind components | m s-1 | scalar or `(ncell,)` | MPAS-A |
+| `AIRDEN` | Dry air density | kg m-3 | scalar or `(ncell,)` | MPAS-A |
+| `HFLUX` | Sensible heat flux | W m-2 | scalar or `(ncell,)` | MPAS-A |
+| `box_height_m` | Height of the well-mixed box | m | scalar | MPAS-A (layer thickness) |
+| `species` | MUSICA species with `henrys_law_constant` and `reactivity` properties | M atm-1, 1 | list | constant |
+| `land_cover` | Olson land-cover patches, each with a fraction and an LAI | 1, m2 m-2 | list, or list of lists `(ncell,)` | external dataset |
+| `coefficients` | Olson dry deposition coefficients | various | fixed | external dataset |
+
+## Outputs
+
+| Name | Description | Units | Shape | Destination |
+|---|---|---|---|---|
+| `dvel_cms` | Dry deposition velocity (one species, scalar input) | cm s-1 | scalar | diagnostic |
+| `k_s` | First-order loss rate (one species, scalar input) | s-1 | scalar | MICM rate parameter |
+| `{species: k}` | First-order loss rate for each species (array input) | s-1 | `(ncell,)` for each species | MICM rate parameter |
 
 ## Examples
 
@@ -65,3 +122,8 @@ python examples/lhs_driver.py --cells 200 --seed 42
 | `output/lhs_sensitivity_<species>.png` | Scatter plots of v_d vs. each meteorological input |
 | `output/lhs_landcover_<species>.png` | Scatter plots of v_d vs. land-cover fraction |
 | `output/lhs_timeseries.png` | Mean ± 1 std normalised concentration over time across all cells |
+
+## References
+
+- Wesely, M. L. (1989). Parameterization of surface resistances to gaseous dry deposition in regional-scale numerical models. Atmos. Environ., 23, 1293-1304. https://doi.org/10.1016/0004-6981(89)90153-4
+- Feinberg, A., et al. (2022). Evaluating atmospheric mercury (Hg) uptake by vegetation in a chemistry-transport model. Environ. Sci.: Processes Impacts, 24, 1303-1318. https://doi.org/10.1039/D2EM00032F

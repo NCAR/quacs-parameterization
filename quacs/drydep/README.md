@@ -1,6 +1,13 @@
-# Dry Deposition Schemes
+# Dry deposition
 
-| Scheme | Description | Based On |
-|--------|-------------|----------|
-| [simple](simple/) | Simplified dry deposition scheme | [GEOS-Chem standalone drydep](https://github.com/arifein/offline-drydep) |
-| [lhs](lhs/) | Latin hypercube sampling of dry deposition parameters | [GEOS-Chem standalone drydep](https://github.com/arifein/offline-drydep) |
+Schemes that compute the dry deposition velocity of gases and the loss that it causes.
+
+| Scheme | Description | Status |
+|---|---|---|
+| `wesely` (planned PR) | Wesely (1989), from CAM mo_drydep.F90 | implemented |
+| [`simple`](simple/) | GEOS-Chem offline dry deposition, Fortran translation | implemented |
+| [`lhs`](lhs/) | GEOS-Chem offline dry deposition with Latin hypercube sampling | implemented |
+
+The `data/` folder holds the Olson 2001 land-cover files that `simple` and `lhs` use.
+
+Each scheme folder follows the layout in [CONTRIBUTING.md](../../CONTRIBUTING.md).

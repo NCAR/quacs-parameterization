@@ -1,18 +1,18 @@
 ## Description
 
-<!-- Describe the parameterization: what physical process does it represent,
-     what model/scheme is implemented, and what it produces. -->
+<!-- Which target parameterization does this PR add or change?
+     Tell what physical or chemical process it represents and what it produces. -->
 
 ## Scientific references
 
-<!-- List the key papers this parameterization is based on. -->
+<!-- List the key papers and the original code that this parameterization follows. -->
 
 ## Checklist
 
-- [ ] Parameterization lives in its own folder under `quacs/` and is importable as `from quacs.<name> import ...`
-- [ ] `quacs/<name>/__init__.py` exports the public API
-- [ ] `quacs/<name>/README.md` describes the science, inputs/outputs, and references
-- [ ] Tests in `quacs/<name>/tests/` — `pytest` passes from the repo root
-- [ ] New dependencies added to the top-level `pyproject.toml`
-- [ ] `ruff check .` passes
-- [ ] `ruff format --check .` passes
+- [ ] The scheme is in `quacs/<process>/<scheme>/` and imports as `from quacs.<process>.<scheme> import ...`
+- [ ] `quacs/<process>/<scheme>/README.md` follows `templates/scheme/README.md`, with complete **Inputs** and **Outputs** tables
+- [ ] The process `README.md` lists the scheme and its status
+- [ ] At least one example script or notebook in `examples/` runs
+- [ ] New dependencies are in `pyproject.toml`
+- [ ] `pytest` passes from the repository root
+- [ ] `ruff check .` and `ruff format --check .` pass

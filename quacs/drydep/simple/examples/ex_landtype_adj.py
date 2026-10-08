@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# quacs: skip-example needs Yuan_MODIS_XLAI_2_25_2015.nc, which is not in the repository
 """
 Updated: Jan 2022
 Running offline version of dry deposition of GEOS-Chem on hourly timescale, adjusting for land type

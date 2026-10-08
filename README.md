@@ -53,7 +53,7 @@ A placeholder folder has only a README with the content of the target list.
 | Aerosol optics | [`aerosol_optics`](quacs/aerosol_optics/) | [Ghan & Zaveri (2007)](quacs/aerosol_optics/ghan_zaveri/) | placeholder |
 | Aerosol and snow albedo | [`snow_albedo`](quacs/snow_albedo/) | [SNICAR-ADv3](quacs/snow_albedo/snicar_adv/) | placeholder |
 | Heterogeneous chemistry | [`heterogeneous_chem`](quacs/heterogeneous_chem/) | [Uptake on dust](quacs/heterogeneous_chem/dust_uptake/) | placeholder |
-| Halogenated VSLS | [`vsls`](quacs/vsls/) | CESM2-SLH sea-salt bromine | in progress (planned PR) |
+| Halogenated VSLS | [`vsls`](quacs/vsls/) | [CESM2-SLH sea-salt bromine](quacs/vsls/cesm2_slh/) | in progress |
 
 ## Installation
 

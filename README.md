@@ -35,7 +35,7 @@ A placeholder folder has only a README with the content of the target list.
 | Dust emission | [`dust`](quacs/dust/) | [Kok et al. (2014)](quacs/dust/kok/) | implemented |
 | Dust emission | [`dust`](quacs/dust/) | [DEAD (Zender et al., 2003)](quacs/dust/zender/) | implemented |
 | Dust emission | [`dust`](quacs/dust/) | [Leung et al. (2023)](quacs/dust/leung/) | implemented |
-| Dry deposition | [`drydep`](quacs/drydep/) | Wesely (1989), from CAM | implemented (planned PR) |
+| Dry deposition | [`drydep`](quacs/drydep/) | [Wesely (1989), from CAM](quacs/drydep/wesely/) | implemented |
 | Dry deposition | [`drydep`](quacs/drydep/) | [GEOS-Chem, simple](quacs/drydep/simple/) | implemented |
 | Dry deposition | [`drydep`](quacs/drydep/) | [GEOS-Chem, LHS](quacs/drydep/lhs/) | implemented |
 | Aerosol wet deposition | [`wetdep`](quacs/wetdep/) | CAM wetdepa_v2 | implemented (planned PR) |

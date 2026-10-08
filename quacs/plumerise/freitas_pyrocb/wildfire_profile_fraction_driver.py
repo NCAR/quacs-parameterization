@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from quacs.plumerise.layer_fraction_driver import layer_fraction_driver
-from quacs.plumerise.prm_height_driver import prm_height_driver
-from quacs.plumerise.pyrocb_flag_driver import pyrocb_flag_driver
+from quacs.plumerise.freitas_pyrocb.layer_fraction_driver import layer_fraction_driver
+from quacs.plumerise.freitas_pyrocb.prm_height_driver import prm_height_driver
+from quacs.plumerise.freitas_pyrocb.pyrocb_flag_driver import pyrocb_flag_driver
 
 
 def compute_wildfire_profile_fraction_driver(

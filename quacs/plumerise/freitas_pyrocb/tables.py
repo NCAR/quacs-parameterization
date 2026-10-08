@@ -72,6 +72,4 @@ def validate_vegetation_split_table(
     for vegetation_class, split in table.items():
         total = split.smoldering_fraction + split.flaming_fraction
         if abs(total - 1.0) > tolerance:
-            raise ValueError(
-                f"vegetation split for {vegetation_class!r} sums to {total}, not 1"
-            )
+            raise ValueError(f"vegetation split for {vegetation_class!r} sums to {total}, not 1")

@@ -30,7 +30,7 @@ A placeholder folder has only a README with the content of the target list.
 
 | Target class | Process folder | Scheme | Status |
 |---|---|---|---|
-| Dust emission | [`dust`](quacs/dust/) | GOCART (Ginoux et al., 2001) | implemented ([PR #5](https://github.com/NCAR/quacs-parameterization/pull/5)) |
+| Dust emission | [`dust`](quacs/dust/) | [GOCART (Ginoux et al., 2001)](quacs/dust/ginoux/) | implemented |
 | Dust emission | [`dust`](quacs/dust/) | [LS99-FENGSHA](quacs/dust/fengsha/) | placeholder |
 | Dust emission | [`dust`](quacs/dust/) | Kok et al. (2014) | implemented (planned PR) |
 | Dust emission | [`dust`](quacs/dust/) | DEAD (Zender et al., 2003) | implemented (planned PR) |

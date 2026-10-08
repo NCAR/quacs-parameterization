@@ -38,7 +38,7 @@ A placeholder folder has only a README with the content of the target list.
 | Dry deposition | [`drydep`](quacs/drydep/) | [Wesely (1989), from CAM](quacs/drydep/wesely/) | implemented |
 | Dry deposition | [`drydep`](quacs/drydep/) | [GEOS-Chem, simple](quacs/drydep/simple/) | implemented |
 | Dry deposition | [`drydep`](quacs/drydep/) | [GEOS-Chem, LHS](quacs/drydep/lhs/) | implemented |
-| Aerosol wet deposition | [`wetdep`](quacs/wetdep/) | CAM wetdepa_v2 | implemented (planned PR) |
+| Aerosol wet deposition | [`wetdep`](quacs/wetdep/) | [CAM wetdepa_v2](quacs/wetdep/aerosol_cam/) | implemented |
 | Aerosol wet deposition | [`wetdep`](quacs/wetdep/) | [PNNL MOSAIC](quacs/wetdep/aerosol_mosaic/) | placeholder |
 | Trace gas wet deposition | [`wetdep`](quacs/wetdep/) | [Neu et al. (2012)](quacs/wetdep/gas_neu/) | placeholder |
 | MEGAN biogenic emissions | [`biogenic`](quacs/biogenic/) | MEGAN 3.0 | implemented ([PR #10](https://github.com/NCAR/quacs-parameterization/pull/10)) |

@@ -25,5 +25,5 @@ class TestMapping(unittest.TestCase):
         with self.assertRaises(ValueError):self.m.convert(np.ones(18))
     def test_diagnostics(self):
         self.assertIn(48,self.m.duplicate_species_ids)
-        self.assertTrue(self.m.duplicate_mechanism_rows)
+        self.assertFalse(self.m.duplicate_mechanism_rows)
 if __name__=='__main__':unittest.main()

@@ -44,28 +44,50 @@ from numpy.polynomial.legendre import leggauss
 #  14 cool-canopy total humidity change (Pa)
 #  15 normalized canopy depth where wind becomes negligible
 #  16 canopy transparency
-CANOPY_CHARACTERISTICS = np.array(
-    [
-        [16.0, 16.0, 16.0, 1.0, 0.5, 1.0],
-        [0.005, 0.05, 0.05, 0.015, 0.01, 0.02],
-        [0.1, 0.1, 0.1, 0.1, 0.15, 0.15],
-        [24.0, 24.0, 24.0, 2.0, 0.5, 1.0],
-        [0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
-        [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
-        [0.057, 0.057, 0.057, 0.057, 0.057, 0.057],
-        [0.389, 0.389, 0.389, 0.389, 0.389, 0.389],
-        [0.85, 1.1, 0.9, 0.85, 0.7, 0.65],
-        [0.95, 0.95, 0.95, 0.95, 0.95, 0.95],
-        [1.25, 1.25, 1.25, 1.0, 1.25, 1.25],
-        [0.06, 0.06, 0.06, 0.06, 0.06, 0.06],
-        [-0.06, -0.06, -0.06, -0.06, -0.06, -0.06],
-        [700.0, 700.0, 700.0, 700.0, 700.0, 700.0],
-        [150.0, 150.0, 150.0, 150.0, 150.0, 150.0],
-        [0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
-        [0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
-    ],
-    dtype=float,
-)
+# Canopy parameters are loaded from one shared CSV, not hard-coded in Python.
+from pathlib import Path as _Path
+import csv as _csv
+
+_REQUIRED_CHARACTERISTICS = ('canopy_depth_m', 'leaf_width_m', 'leaf_length_m', 'canopy_height_m', 'visible_scattering_coefficient', 'near_ir_scattering_coefficient', 'diffuse_visible_reflection_coefficient', 'diffuse_near_ir_reflection_coefficient', 'leaf_clustering_coefficient', 'leaf_ir_emissivity', 'stomata_cuticle_factor', 'daytime_temperature_lapse_rate_K_m-1', 'nighttime_temperature_lapse_rate_K_m-1', 'warm_canopy_humidity_change_Pa', 'cool_canopy_humidity_change_Pa', 'normalized_no_wind_depth', 'canopy_transparency')
+
+def load_canopy_characteristics(path=None):
+    """Read canopy table by characteristic and type name, independent of row order."""
+    if path is None:
+        path = _Path(__file__).resolve().parent.parent / 'inputs' / 'canopy_characteristic.csv'
+    with open(path, newline='', encoding='utf-8-sig') as f:
+        reader = _csv.DictReader(f)
+        if not reader.fieldnames or reader.fieldnames[0] != 'Characteristic':
+            raise ValueError('First canopy CSV column must be Characteristic')
+        types = tuple(reader.fieldnames[1:])
+        if not types or len(set(types)) != len(types):
+            raise ValueError('Canopy types must be nonempty and unique')
+        rows = list(reader)
+    names = [r['Characteristic'] for r in rows]
+    if len(set(names)) != len(names):
+        raise ValueError('Duplicate canopy characteristic names')
+    missing = set(_REQUIRED_CHARACTERISTICS) - set(names)
+    if missing:
+        raise ValueError(f'Missing required canopy characteristics: {sorted(missing)}')
+    try:
+        matrix = np.array([[float(row[t]) for t in types] for row in rows], dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise ValueError('Invalid canopy characteristic value') from exc
+    if not np.isfinite(matrix).all():
+        raise ValueError('Canopy characteristics must be finite')
+    return dict(zip(names, matrix)), types
+
+CANOPY_CHARACTERISTICS, CANOPY_TYPE_NAMES = load_canopy_characteristics()
+
+def configure_canopy(path):
+    """Update canopy data for this process before model evaluation."""
+    global CANOPY_CHARACTERISTICS, CANOPY_TYPE_NAMES, N_CANOPY_TYPES, N_CANOPY_CHARACTERISTICS
+    CANOPY_CHARACTERISTICS, CANOPY_TYPE_NAMES = load_canopy_characteristics(path)
+    N_CANOPY_TYPES = len(CANOPY_TYPE_NAMES)
+    N_CANOPY_CHARACTERISTICS = len(CANOPY_CHARACTERISTICS)
+
+
+def canopy_characteristic(name, canopy_type):
+    return CANOPY_CHARACTERISTICS[name][canopy_type]
 
 # ---------------------------------------------------------------------------
 # Constants and Variables
@@ -75,8 +97,8 @@ _DEGREES_PER_RADIAN = 57.29578 # 180/Pi
 _PI_APPROX = 3.14159  # Pi
 STEFAN_BOLTZMANN = 5.67e-8  # W m-2 K-4
 
-N_CANOPY_TYPES = 6
-N_CANOPY_CHARACTERISTICS = 17
+N_CANOPY_TYPES = len(CANOPY_TYPE_NAMES)
+N_CANOPY_CHARACTERISTICS = len(CANOPY_CHARACTERISTICS)
 
 def solar_elevation_angle(day_of_year: float, latitude_deg: float, hour: float) -> float:
     """Calculate solar elevation angle in degrees.
@@ -242,8 +264,8 @@ def canopy_temperature_lapse_rate(canopy_type: int, solar_w_m2: float) -> float:
     """Return the canopy air-temperature lapse rate for current radiation."""
 
     transition_solar = 500.0
-    daytime_rate = CANOPY_CHARACTERISTICS[11, canopy_type]
-    nighttime_rate = CANOPY_CHARACTERISTICS[12, canopy_type]
+    daytime_rate = canopy_characteristic('daytime_temperature_lapse_rate_K_m-1', canopy_type)
+    nighttime_rate = canopy_characteristic('nighttime_temperature_lapse_rate_K_m-1', canopy_type)
 
     if solar_w_m2 > transition_solar:
         return float(daytime_rate)
@@ -389,7 +411,7 @@ def canopy_radiation(
     absorbed_diffuse_nir = np.zeros(number_of_layers, dtype=float)
     absorbed_scattered_nir = np.zeros(number_of_layers, dtype=float)
 
-    canopy_transparency = CANOPY_CHARACTERISTICS[16, canopy_type]
+    canopy_transparency = canopy_characteristic('canopy_transparency', canopy_type)
     adjusted_lai = lai / (1.0 - canopy_transparency)
 
     is_daytime = (
@@ -418,11 +440,11 @@ def canopy_radiation(
             absorbed_scattered_nir,
         )
 
-    scattering_visible = CANOPY_CHARACTERISTICS[4, canopy_type]
-    scattering_nir = CANOPY_CHARACTERISTICS[5, canopy_type]
-    diffuse_reflection_visible = CANOPY_CHARACTERISTICS[6, canopy_type]
-    diffuse_reflection_nir = CANOPY_CHARACTERISTICS[7, canopy_type]
-    clustering = CANOPY_CHARACTERISTICS[8, canopy_type]
+    scattering_visible = canopy_characteristic('visible_scattering_coefficient', canopy_type)
+    scattering_nir = canopy_characteristic('near_ir_scattering_coefficient', canopy_type)
+    diffuse_reflection_visible = canopy_characteristic('diffuse_visible_reflection_coefficient', canopy_type)
+    diffuse_reflection_nir = canopy_characteristic('diffuse_near_ir_reflection_coefficient', canopy_type)
+    clustering = canopy_characteristic('leaf_clustering_coefficient', canopy_type)
 
     # Black-leaf extinction coefficients, assuming a spherical leaf-angle
     # distribution (0.5 = cos(60 degrees)).
@@ -771,15 +793,15 @@ def canopy_energy_balance(
     sun_stomatal_resistance = np.zeros(number_of_layers, dtype=float)
     shade_stomatal_resistance = np.zeros(number_of_layers, dtype=float)
 
-    canopy_depth = CANOPY_CHARACTERISTICS[0, canopy_type]
-    leaf_width = CANOPY_CHARACTERISTICS[1, canopy_type]
-    leaf_length = CANOPY_CHARACTERISTICS[2, canopy_type]
-    canopy_height = CANOPY_CHARACTERISTICS[3, canopy_type]
-    emissivity = CANOPY_CHARACTERISTICS[9, canopy_type]
-    transpiration_type = CANOPY_CHARACTERISTICS[10, canopy_type]
-    warm_humidity_change = CANOPY_CHARACTERISTICS[13, canopy_type]
-    cool_humidity_change = CANOPY_CHARACTERISTICS[14, canopy_type]
-    normalized_no_wind_depth = CANOPY_CHARACTERISTICS[15, canopy_type]
+    canopy_depth = canopy_characteristic('canopy_depth_m', canopy_type)
+    leaf_width = canopy_characteristic('leaf_width_m', canopy_type)
+    leaf_length = canopy_characteristic('leaf_length_m', canopy_type)
+    canopy_height = canopy_characteristic('canopy_height_m', canopy_type)
+    emissivity = canopy_characteristic('leaf_ir_emissivity', canopy_type)
+    transpiration_type = canopy_characteristic('stomata_cuticle_factor', canopy_type)
+    warm_humidity_change = canopy_characteristic('warm_canopy_humidity_change_Pa', canopy_type)
+    cool_humidity_change = canopy_characteristic('cool_canopy_humidity_change_Pa', canopy_type)
+    normalized_no_wind_depth = canopy_characteristic('normalized_no_wind_depth', canopy_type)
 
     if above_canopy_temperature_k > 288.0:
         humidity_gradient = warm_humidity_change / canopy_height
@@ -898,6 +920,6 @@ def canopy_energy_balance(
 def adjusted_lai(lai: float, canopy_type: int) -> float:
     """Return LAI adjusted for canopy transparency."""
 
-    return float(lai / (1.0 - CANOPY_CHARACTERISTICS[16, canopy_type]))
+    return float(lai / (1.0 - canopy_characteristic('canopy_transparency', canopy_type)))
 
 

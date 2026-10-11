@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Single-grid-cell MEGAN3 driver with meteorology defined as Python variables.
 
-No namelist, meteorology CSV, output files, or plots.
-EF/LDF and PFT fractions still use the original upstream CSV readers.
+No meteorology CSV or plots; EF/LDF output is configured in YAML.
+EF/LDF are derived from plant/ecotype/growth-form tables at runtime.
 Run with the MEGAN3_in_python repository's ``src`` package importable.
 
 All meteorological numbers below are illustrative, NOT measured site data.
@@ -10,46 +10,13 @@ Historical quantities must be supplied by the host model or prepared from
 past observations before each call. They are not inferred from one snapshot.
 """
 from pathlib import Path
+from contextlib import redirect_stdout
 import sys
-
 import numpy as np
-from .. import biogenic_emission_megan_v3 as adapter
-from ..src.MGN2MECH import MGN2MECH
+from ..biogenic_emission_megan_v3 import MeganModel
+from ..src.config import MeganConfig
 
-# ============================================================================
-# 1. FILES: only EF/LDF and PFT CSV remain
-# ============================================================================
-# Directory containing this driver
 MEGAN_DIR = Path(__file__).resolve().parent.parent
-emission_factors_file = MEGAN_DIR / "inputs" / "EF_LDF.csv"
-pft_fractions_file = MEGAN_DIR / "inputs" / "PFT_Fraction.csv"
-# ============================================================================
-# 2. MODEL / SITE: former namelist settings
-# ============================================================================
-n_class = 19  # number of VOC classes
-NLayers = 5   # number of canopy layers
-canopy_layer_method = 'gaussian'  # 'gaussian' or 'uniform'
-NRTYP = 6 # number of canopy types
-
-solar_constant_w_m2 = 1361.5
-solar_to_ppfd = 2.1
-air_quality_index = 40.0
-co2_ppm = 403.0
-kc_min = 0.0
-kc_max = 0.82
-wilting_point = 0.196
-humidity_mode = 'RH'  # Current emission adapter accepts RH only
-
-# ============================================================================
-# 3. ACTIVITY SWITCHES: former namelist settings
-# ============================================================================
-GAMBD_YN = True
-GAMAQ_YN = True
-GAMHT_YN = False
-GAMLT_YN = False
-GAMHW_YN = False
-GAMSM_YN = False
-GAMCO2_YN = False
 
 # ============================================================================
 # 4. METEOROLOGY FOR ONE GRID CELL AND ONE TIMESTEP (SCALARS)
@@ -100,67 +67,35 @@ def emission_flux_to_ppmv_tendency(flux_nmol_m2_s, alt_m3_kg, dz_m):
     return np.asarray(flux_nmol_m2_s) * 1.0e-3 * M_DRY_AIR_KG_MOL * alt_m3_kg / dz_m
 
 
-def main():
-    if humidity_mode != 'RH':
-        raise ValueError('Current MEGAN adapter supports RH, not specific humidity.')
-    if not np.isfinite(SWC30D) or not (0.0 <= SWC30D <= 1.0):
-        raise ValueError('SWC30D must be a volumetric soil water content between 0 and 1 m3/m3.')
-    if GAMSM_YN and not np.isfinite(kc_7d):
-        raise ValueError('Upstream MEGAN GAMSM_YN uses kc_7d, not SWC30D. Provide kc_7d or keep GAMSM_YN=False.')
-    mapper = MGN2MECH()
-    species = adapter.load_species_parameters(emission_factors_file)
-    if tuple(species.names) != tuple(mapper.class_names):
-        raise ValueError("EF_LDF.csv classes must match official MEGAN3.21 class order")
-    pfts = adapter.load_pft_parameters(pft_fractions_file)
-    if len(species.names) != n_class:
-        raise ValueError(f'n_class={n_class}, but EF/LDF has {len(species.names)} classes')
-    if len(pfts.fractions_percent) != NRTYP:
-        raise ValueError(f'NRTYP={NRTYP}, but PFT input has {len(pfts.fractions_percent)} types')
-
-    settings = adapter.MeganSettings(
-        n_class=n_class, NLayers=NLayers, NRTYP=NRTYP,
-        canopy_layer_method=canopy_layer_method,
-        solar_constant_w_m2=solar_constant_w_m2,
-        solar_to_ppfd=solar_to_ppfd,
-        air_quality_index=air_quality_index,
-        co2_ppm=co2_ppm, kc_min=kc_min, kc_max=kc_max,
-    )
-    switches = dict(
-        bidirectional_lai_response=GAMBD_YN,
-        air_quality_response=GAMAQ_YN,
-        high_temperature_response=GAMHT_YN,
-        low_temperature_response=GAMLT_YN,
-        high_wind_response=GAMHW_YN,
-        soil_moisture_response=GAMSM_YN,
-        co2_response=GAMCO2_YN,
-    )
-
-    pft_fraction = pfts.fractions_percent / 100.0
-    ef = species.emission_factors_nmol_m2_s
-    ldf = species.light_dependent_fraction
-
-    Fbio = adapter.biogenic_emission_megan_v3(
+def _run_model():
+    model = MeganModel.from_yaml(MEGAN_DIR / "configure.yaml")
+    Fbio = model.run(
         day=day, hour=hour, latitude_deg=latitude_deg,
         temperature_k=T_k, pressure_pa=P_pa,
         wind_m_s=wind_m_s, relative_humidity_percent=RH_percent,
         swdnb_w_m2=SWDNB, lai=LAI, previous_lai=previous_LAI,
-        pft_fraction=pft_fraction, emission_factor=ef,
-        light_dependent_fraction=ldf,
         t24_k=T24_k, swdnb_24h_w_m2=SWDNB_24h, t10d_k=T10d_k,
         tmax_k=Tmax_k, tmin_k=Tmin_k, windmax_m_s=Windmax_m_s,
-        kc_7d=kc_7d, swc30d=SWC30D, settings=settings, switches=switches,
+        kc_7d=kc_7d, swc30d=SWC30D,
     )
+    class_names = model.class_names
+    n_class = len(class_names)
     np.set_printoptions(precision=6, suppress=True, linewidth=160)
     print(f'MEGAN3: one grid cell, one timestep, {n_class} official MEGAN3.21 classes')
     print('Flux unit: nmol m-2 s-1')
-    print(f'day={day:g}, hour={hour:g}, SWC30D={SWC30D:g} m3/m3')
-    for name, flux in zip(species.names, Fbio):
+    print(f'day={day:g}, hour={hour:g}')
+    for name, flux in zip(class_names, Fbio):
         print(f'  {name}: {flux:.6g}')
-    cbmz_flux, species_flux = mapper.convert(Fbio, 'CBMZ', return_species=True)
-    print('CBMZ fluxes (nmol m-2 s-1):')
-    for mech_id, name, flux in zip(mapper.mechanism_ids, mapper.mechanism_names, cbmz_flux):
-        print(f'  {mech_id}: {name}: {flux:.6g}')
-    print('MGN2MECH mapping diagnostics:', mapper.diagnostics())
+    mechanism_flux, species_flux = model.to_mechanism(Fbio, return_species=True)
+    print(f'{model.mechanism} fluxes (nmol m-2 s-1):')
+    if model.mechanism in ('SPECIES', 'NONE'):
+        names = model.mapper.species_names
+        for name, flux in zip(names, mechanism_flux):
+            print(f'  {name}: {flux:.6g}')
+    else:
+        for mech_id, name, flux in zip(model.mapper.mechanism_ids, model.mapper.mechanism_names, mechanism_flux):
+            print(f'  {mech_id}: {name}: {flux:.6g}')
+    print('MGN2MECH mapping diagnostics:', model.mapper.diagnostics())
     if integrate_mixing_ratio:
         if not np.isfinite(step_seconds) or step_seconds < 0:
             raise ValueError('step_seconds must be nonnegative and finite.')
@@ -171,6 +106,35 @@ def main():
         x_ppmv += tendency_ppmv_s * step_seconds
         print('Tracer tendencies (ppmv dry-air/s):', tendency_ppmv_s)
         print('Tracer mixing ratios after one timestep (ppmv dry-air):', x_ppmv)
+
+class _Tee:
+    """Write stdout to both the terminal and a plain-text result file."""
+
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, text):
+        for stream in self.streams:
+            stream.write(text)
+        return len(text)
+
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+
+
+def main():
+    config = MeganConfig.from_yaml(MEGAN_DIR / "configure.yaml")
+    filename = config.outputs.get('result_file')
+    if not isinstance(filename, str) or not filename.strip():
+        raise ValueError('files.outputs.result_file must be a nonempty file path')
+    output_path = config.path(filename)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Redirect only during model execution, restoring stdout even if an error occurs.
+    with output_path.open('w', encoding='utf-8') as result_stream:
+        with redirect_stdout(_Tee(sys.stdout, result_stream)):
+            _run_model()
+
 
 if __name__ == '__main__':
     main()

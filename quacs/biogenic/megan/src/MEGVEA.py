@@ -17,67 +17,75 @@ import numpy as np
 
 # The original coefficient tables contain 20 activity classes.  The supplied
 # example emission-factor file uses the first 19 classes.
-N_ACTIVITY_CLASSES = 20
+from pathlib import Path
+import csv
 
-# Leaf-age response coefficients.
-_A_NEW = np.array(
-    [
-        0.05, 0.05, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 0.4, 0.4,
-        3.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-    ],
-    dtype=float,
-)
-_A_GROWING = np.array(
-    [
-        0.6, 0.6, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 0.6, 0.6,
-        3.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-    ],
-    dtype=float,
-)
-_A_MATURE = np.ones(N_ACTIVITY_CLASSES, dtype=float)
-_A_OLD = np.array(
-    [
-        0.9, 0.9, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 0.95, 0.95,
-        1.2, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-    ],
-    dtype=float,
-)
+def load_activity_parameters(path=None):
+    """Load per-class response coefficients, ordered as CSV rows."""
+    path = Path(path) if path is not None else Path(__file__).resolve().parent.parent / 'inputs' / 'activity_class_parameters.csv'
+    with path.open(newline='', encoding='utf-8-sig') as f:
+        rows = list(csv.DictReader(f))
+    names = tuple(row['class_name'] for row in rows)
+    if not names or len(set(names)) != len(names):
+        raise ValueError('Activity class names must be nonempty and unique')
+    cols = ['a_new', 'a_growing', 'a_mature', 'a_old', 'air_quality_coefficient', 'high_temperature_coefficient', 'low_temperature_coefficient', 'high_wind_coefficient', 'cleo', 'ct1', 'beta']
+    result = {}
+    for key in cols:
+        try:
+            result[key] = np.array([float(row[key]) for row in rows])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(f'Invalid activity parameter: {key}') from exc
+        if not np.isfinite(result[key]).all():
+            raise ValueError(f'Nonfinite activity parameter: {key}')
+    ldf = []
+    for row in rows:
+        value = row.get('ldf', '')
+        if value.strip().upper() == 'GRID':
+            ldf.append(np.nan)
+        else:
+            try:
+                number = float(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Invalid LDF for {row['class_name']}: {value!r}") from exc
+            if not np.isfinite(number) or not 0 <= number <= 1:
+                raise ValueError(f"LDF for {row['class_name']} must be GRID or in [0,1]")
+            ldf.append(number)
+    result['ldf'] = np.asarray(ldf, dtype=float)
+    return names, result
 
-# Stress-response coefficient tables.
-_AIR_QUALITY_COEFFICIENT = np.array(
-    [1, 1, 1, 5, 1, 1, 1, 1, 5, 5, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1],
-    dtype=float,
-)
-_HIGH_TEMPERATURE_COEFFICIENT = _AIR_QUALITY_COEFFICIENT.copy()
-_LOW_TEMPERATURE_COEFFICIENT = _AIR_QUALITY_COEFFICIENT.copy()
-_HIGH_WIND_COEFFICIENT = np.array(
-    [1, 1, 5, 5, 5, 5, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1],
-    dtype=float,
-)
+ACTIVITY_CLASS_NAMES, _PARAMETERS = load_activity_parameters()
+N_ACTIVITY_CLASSES = len(ACTIVITY_CLASS_NAMES)
+_ACTIVITY_LDF = _PARAMETERS['ldf']
+_A_NEW = _PARAMETERS['a_new']
+_A_GROWING = _PARAMETERS['a_growing']
+_A_MATURE = _PARAMETERS['a_mature']
+_A_OLD = _PARAMETERS['a_old']
+_AIR_QUALITY_COEFFICIENT = _PARAMETERS['air_quality_coefficient']
+_HIGH_TEMPERATURE_COEFFICIENT = _PARAMETERS['high_temperature_coefficient']
+_LOW_TEMPERATURE_COEFFICIENT = _PARAMETERS['low_temperature_coefficient']
+_HIGH_WIND_COEFFICIENT = _PARAMETERS['high_wind_coefficient']
+_CLEO = _PARAMETERS['cleo']
+_CT1 = _PARAMETERS['ct1']
+_BETA = _PARAMETERS['beta']
 
-# Temperature-response coefficients.
-_CLEO = np.array(
-    [
-        2.0, 2.0, 1.83, 1.83, 1.83, 1.83, 1.83, 1.83, 2.37, 2.37,
-        1.60, 1.83, 2.0, 2.0, 1.83, 1.83, 1.83, 1.83, 1.60, 1.83,
-    ],
-    dtype=float,
-)
-_CT1 = np.array(
-    [
-        95, 95, 80, 80, 80, 80, 80, 80, 130, 130,
-        60, 80, 95, 95, 80, 80, 80, 80, 60, 80,
-    ],
-    dtype=float,
-)
-_BETA = np.array(
-    [
-        0.13, 0.13, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.17, 0.17,
-        0.08, 0.10, 0.13, 0.13, 0.10, 0.10, 0.10, 0.10, 0.08, 0.10,
-    ],
-    dtype=float,
-)
-
+def configure_activity(path):
+    """Update activity coefficients for this process before model evaluation."""
+    global ACTIVITY_CLASS_NAMES, N_ACTIVITY_CLASSES, _ACTIVITY_LDF
+    global _A_NEW, _A_GROWING, _A_MATURE, _A_OLD, _AIR_QUALITY_COEFFICIENT, _HIGH_TEMPERATURE_COEFFICIENT, _LOW_TEMPERATURE_COEFFICIENT, _HIGH_WIND_COEFFICIENT, _CLEO, _CT1, _BETA
+    ACTIVITY_CLASS_NAMES, parameters = load_activity_parameters(path)
+    N_ACTIVITY_CLASSES = len(ACTIVITY_CLASS_NAMES)
+    _ACTIVITY_LDF = parameters['ldf']
+    _A_NEW = parameters['a_new']
+    _A_GROWING = parameters['a_growing']
+    _A_MATURE = parameters['a_mature']
+    _A_OLD = parameters['a_old']
+    _AIR_QUALITY_COEFFICIENT = parameters['air_quality_coefficient']
+    _HIGH_TEMPERATURE_COEFFICIENT = parameters['high_temperature_coefficient']
+    _LOW_TEMPERATURE_COEFFICIENT = parameters['low_temperature_coefficient']
+    _HIGH_WIND_COEFFICIENT = parameters['high_wind_coefficient']
+    _CLEO = parameters['cleo']
+    _CT1 = parameters['ct1']
+    _BETA = parameters['beta']
 
 def _validate_species_index(species_index: int) -> None:
     """Raise a clear error when a species/activity-class index is invalid."""
@@ -428,3 +436,19 @@ def gamma_sm_kc(kc: float, kc_max: float, kc_min: float) -> float:
             + 1.0 / maximum_factor
         )
     )
+
+
+def get_ldf_configuration(class_names):
+    """Return grid-dependent 1-based class IDs and fixed LDF values, matched by name."""
+    lookup = {name: i for i, name in enumerate(ACTIVITY_CLASS_NAMES)}
+    missing = set(class_names) - set(lookup)
+    if missing:
+        raise ValueError(f'Activity coefficients missing emission classes: {sorted(missing)}')
+    selected = np.asarray([_ACTIVITY_LDF[lookup[name]] for name in class_names])
+    return tuple(i + 1 for i, v in enumerate(selected) if np.isnan(v)), selected.copy()
+
+def validate_activity_classes(class_names):
+    if len(class_names) > N_ACTIVITY_CLASSES:
+        raise ValueError('Not enough activity-class coefficient rows')
+    if tuple(class_names) != ACTIVITY_CLASS_NAMES[:len(class_names)]:
+        raise ValueError('Activity class order differs from mapping class order')

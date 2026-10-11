@@ -1,0 +1,48 @@
+MEGAN3: one grid cell, one timestep, 19 official MEGAN3.21 classes
+Flux unit: nmol m-2 s-1
+day=180, hour=12
+  ISOP: 7.9672
+  MBO: 0.026752
+  MT_PINE: 0.360128
+  MT_ACYC: 1.19353
+  MT_CAMP: 0.175686
+  MT_SABI: 0.221143
+  MT_AROM: 0.0516298
+  NO: 0.406669
+  SQT_HR: 0.145783
+  SQT_LR: 0.103234
+  MEOH: 2.01577
+  ACTO: 0.502158
+  ETOH: 0.621741
+  ACID: 0.331595
+  LVOC: 1.75755
+  OXPROD: 0.156924
+  STRESS: 0.956352
+  OTHER: 0.0645373
+  CO: 1.33326
+CBMZ fluxes (nmol m-2 s-1):
+  1: ISOP: 7.9672
+  2: NO: 0.406669
+  4: CO: 1.33326
+  5: CH3OH: 2.01577
+  7: ALD2: 0.31087
+  8: HCHO: 0.141232
+  9: HCOOH: 0.265276
+  10: RCOOH: 0.0630031
+  11: CH4: 0.00968059
+  13: PAR: 2.06772
+  14: ETH: 0.31636
+  24: OLI: 0.0531152
+  25: TERP: 1.98136
+  26: SESQ: 0.249017
+  27: C2H5OH: 0.31087
+  28: KET: 0.502158
+  29: OL2: 0.632719
+  30: OLT: 0.562417
+  31: ISOPRD: 0.666656
+  32: HCN: 0.0478176
+  33: CH3BR: 0.00193612
+  34: CH3CL: 0.00968059
+  35: CH3I: 0.0141982
+  36: TRS: 0.0154889
+MGN2MECH mapping diagnostics: {'fraction_sums': {'ISOP': 1.0, 'MBO': 1.0, 'MT_PINE': 1.0, 'MT_ACYC': 1.0, 'MT_CAMP': 1.0, 'MT_SABI': 0.9999999999999999, 'MT_AROM': 1.0000000000000002, 'CO': 1.0, 'SQT_HR': 1.0000000000000002, 'SQT_LR': 1.0000000000000002, 'MEOH': 1.0, 'ACTO': 1.0, 'ETOH': 1.0, 'ACID': 1.0, 'LVOC': 1.0, 'OXPROD': 0.9950000000000001, 'OTHER': 1.0050000000000001, 'STRESS': 1.0, 'NO': 1.0}, 'duplicate_species_ids': {48: 2}, 'missing_species_ids': [67], 'duplicate_mechanism_rows': {}, 'unmapped_species': ['selinene_d', 'pyruvic_acid', 'butane', 'decanal', 'neryl_acetone', 'nonanal', 'nonenal', 'octanal', 'pentanal', 't-2-octenal', '1_pentanol', '1_penten_3_one', '2_met_butanenitrile', '2_pentene', '3_metfuran', '3_metthiophene', '3_pentanone', '3_penten_2_ol', '4_penten_1_ol', '8_heptadecene', 'acetophenone', 'anisole', 'benzaldehyde', 'benzene', 'benzyl_benzoate', 'benzyl_acetate', 'benzyl_alcohol', 'chavicol', 'cinnamaldehyde', 'cinnamic_acid', 'coniferyl_alcohol', 'ethyl_cinnamate', 'eugenol', 'guaiacol', 'isobutyronitrile', 'jasmone', 'linalool_OXD_c', 'linalool_OXD_t', 'met_benzoate', 'met_jasmonate', 'met_acetate', 'p_coumaric_acid', 'phenol', 'phenylacetaldehyde', 'safrole', 'salicylaldehyde', 'toluene', '3met_3DCTT', 'xylene', 'z2_penten_1ol', 'z2_penten_3ol', 'z3_hexen_1yl_butyrate', 'dodecene_1', 'heptanal', 'heptanone', 'indole', 'MBO_3m2e1ol', 'MBO_3m3e1ol', 'naphthalene', 'santene', 'skatole']}

@@ -185,7 +185,7 @@ def load_species_parameters(path: Path) -> SpeciesParameters:
             f"The activity-factor tables support at most "
             f"{activity.N_ACTIVITY_CLASSES} classes; received {len(names)}"
         )
-    if not names[0].lower().startswith("isoprene"):
+    if names[0].lower() not in ("isop", "isoprene"):
         raise ValueError(
             "The first row of the EF/LDF file must be isoprene because the "
             "current activity-class coefficient ordering assumes index 0."
@@ -247,7 +247,7 @@ def _calculate_canopy_state(
     day: float,
     hour: float,
     temperature_k: float,
-    ppfd: float,
+    swdnb_w_m2: float,
     lai: float,
     wind_m_s: float,
     humidity_input: float,
@@ -277,7 +277,7 @@ def _calculate_canopy_state(
         hour,
     )
     sin_solar_elevation = np.sin(solar_elevation_deg / 57.29578)
-    solar_w_m2 = ppfd / options.solar_to_ppfd
+    solar_w_m2 = swdnb_w_m2
     maximum_solar = (
         sin_solar_elevation
         * options.solar_constant_w_m2
@@ -558,14 +558,16 @@ class MeganSettings:
 
 
 def biogenic_emission_megan_v3(*, day, hour, latitude_deg, temperature_k,
-        ppfd, lai, previous_lai, wind_m_s, relative_humidity_percent,
+        swdnb_w_m2, lai, previous_lai, wind_m_s, relative_humidity_percent,
         pressure_pa, pft_fraction, emission_factor, light_dependent_fraction,
-        t24_k, t10d_k, p24, tmax_k, tmin_k, windmax_m_s,
+        t24_k, t10d_k, swdnb_24h_w_m2, tmax_k, tmin_k, windmax_m_s,
         kc_7d=np.nan, swc30d=np.nan, settings=MeganSettings(), switches=None):
     """Return (n_class,) flux in nmol m-2 s-1.
 
     `pft_fraction` is upstream-style canopy composition, normalized internally.
-    `t24_k` and `p24` must be supplied from a causal rolling 24-h history.
+    `t24_k` and `swdnb_24h_w_m2` must be supplied from a causal rolling 24-h history.
+    Both SWDNB inputs are downward shortwave fluxes in W m-2; conversion
+    to PPFD happens internally once, using settings.solar_to_ppfd.
     `t10d_k` is mean of previous ten complete days.
     """
     # SWC30D is carried as an explicit scalar input for future coupling.
@@ -581,6 +583,12 @@ def biogenic_emission_megan_v3(*, day, hour, latitude_deg, temperature_k,
         raise ValueError('NRTYP changes require a matching expanded MEGCAN canopy parameter table')
     if settings.NLayers < 1:
         raise ValueError('NLayers must be positive')
+    if not np.isfinite(settings.solar_to_ppfd) or settings.solar_to_ppfd <= 0:
+        raise ValueError('solar_to_ppfd must be finite and positive')
+    if not np.isfinite(swdnb_w_m2) or swdnb_w_m2 < 0:
+        raise ValueError('swdnb_w_m2 must be finite and non-negative (W m-2)')
+    if not np.isfinite(swdnb_24h_w_m2) or swdnb_24h_w_m2 < 0:
+        raise ValueError('swdnb_24h_w_m2 must be finite and non-negative (W m-2)')
     fractions = np.asarray(pft_fraction, dtype=float)
     ef = np.asarray(emission_factor, dtype=float)
     ldf = np.asarray(light_dependent_fraction, dtype=float)
@@ -610,13 +618,14 @@ def biogenic_emission_megan_v3(*, day, hour, latitude_deg, temperature_k,
         settings.NLayers, settings.canopy_layer_method
     )
     canopy_state = _calculate_canopy_state(day=float(day), hour=float(hour),
-        temperature_k=float(temperature_k), ppfd=float(ppfd), lai=float(lai),
+        temperature_k=float(temperature_k), swdnb_w_m2=float(swdnb_w_m2), lai=float(lai),
         wind_m_s=float(wind_m_s), humidity_input=float(relative_humidity_percent),
         pressure_pa=float(pressure_pa), controls=controls, pfts=pfts,
         options=options, layer_positions=positions)
     flux = _calculate_record_emissions(current_lai=float(lai),
         previous_lai=float(previous_lai), canopy_state=canopy_state,
-        daily_mean_ppfd=float(p24), daily_mean_temperature_k=float(t24_k),
+        daily_mean_ppfd=float(swdnb_24h_w_m2) * settings.solar_to_ppfd,
+        daily_mean_temperature_k=float(t24_k),
         previous_10_day_temperature_k=float(t10d_k),
         daily_max_temperature_k=float(tmax_k), daily_min_temperature_k=float(tmin_k),
         daily_max_wind_m_s=float(windmax_m_s), kc_7d=float(kc_7d),

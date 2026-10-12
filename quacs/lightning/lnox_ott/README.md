@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | IC_FR, CG_FR, moles of NO for each IC flash (N_IC) and each CG flash (N_CG) |
 | Information to MPAS-A | LNOx tendency (ppmv s-1) added to NO. Often also 1 or 2 LNOx tracers. |
 | Considerations | NO must be in the MPAS scalar array. LNOx tracers, if used, must be in the scalar array and advected. |
-| Equations and references | LNOx_tend = (IC_FR N_IC + CG_FR N_CG) vertdist(lat, land) mass_air. There are 4 prescribed vertical distributions. |
 
 ## Classification
 

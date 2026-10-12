@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Gas-aqueous fraction from Henry's law coefficients, retention fraction in freezing drops, molecular weight, effective Henry's law coefficient |
 | Information to MPAS-A | Updated chemical species; HNO3 column change from scavenging (diagnostic) |
 | Considerations | The scheme uses different equations for the all-liquid, mixed-phase, and all-ice regions of a storm. |
-| Equations and references | Neu and Prather (2012) |
 
 ## Classification
 

@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Aerosol density, bin sections, below-cloud scavenging coefficients |
 | Information to MPAS-A | Updated aerosol concentrations; column change from scavenging (diagnostic) |
 | Considerations | The scheme needs the vertical structure of the host model. Impaction scavenging starts at the model top and goes down to get the precipitation flux in each layer. |
-| Equations and references | WRF-Chem module_mosaic_wetscav.F (to be added) |
 
 ## Classification
 

@@ -20,7 +20,6 @@ This scheme is a direct translation of the offline GEOS-Chem dry deposition code
 | Other inputs | Species Henry's law constant, reactivity factor, molar mass |
 | Information to MPAS-A | Dry deposition velocity and first-order loss rate for each species |
 | Considerations | The surface layer is a well-mixed box. The loss rate is k = v_d / H. |
-| Equations and references | Wesely (1989); Feinberg et al. (2022) |
 
 ## Classification
 

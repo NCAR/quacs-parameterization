@@ -24,7 +24,6 @@ A time-invariant correction map `Kc_map` scales the flux, and lognormal source m
 | Other inputs | Source-to-sink overlap matrix `ovr_src_snk_mss`, from `precompute_constants()`. Module constants: median soil diameter Dp = 127 um, VAI threshold 1.0, impact threshold ratio B_it = 0.82. |
 | Information to MPAS-A | Dust emission flux `F_p` [x, y, 4 bins]. It must be added to the dust species of the host model. |
 | Considerations | The 4 transport bins must be mapped to the dust species or bins of the host model. The intermittency factor needs the Obukhov length from the surface layer scheme. Dust has dry deposition. |
-| Equations and references | u*s = u* F_eff (drag partition); eta = 1 - P_ft + alpha (P_ft - P_it); F_d = eta C_tune C_d f_bare f_clay' liqfrac rho (u*s^2 - u*it^2) / u*it (u*s / u*it)^kappa for u*s > u*it; F_p[n] = sum_m ovr_src_snk_mss[m, n] F_d Kc_map |
 
 ## Classification
 

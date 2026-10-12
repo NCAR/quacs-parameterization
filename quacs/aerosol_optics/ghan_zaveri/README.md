@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Aerosol concentration for each species and mode, hygroscopicity (kappa) |
 | Information to MPAS-A | AOD, SSA, and g for each radiation band |
 | Considerations | Internal mixing in each mode. The scheme must compute the insoluble species, the refractive index, and the wet radius for each mode. The output goes to RRTMG in MPAS-A. |
-| Equations and references | Ghan & Zaveri (2007) |
 
 ## Classification
 

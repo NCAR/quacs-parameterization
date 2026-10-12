@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | IC_FR, CG_FR, N_IC, N_CG, temperatures of the peak IC and CG flashes, method to find cells where refl > refl_threshold |
 | Information to MPAS-A | LNOx tendency (ppmv s-1) added to NO. Often also 1 or 2 LNOx tracers. |
 | Considerations | NO must be in the MPAS scalar array. LNOx tracers, if used, must be in the scalar array and advected. |
-| Equations and references | LNOx_IC_tend = IC_FR N_IC / cellcount fd_IC / B conv_factor where refl > refl_threshold (same form for CG). cellcount is the number of cells on each level with refl > refl_threshold; fd is a vertical distribution; B is a pressure factor. |
 
 ## Classification
 

@@ -25,7 +25,6 @@ One paragraph that tells what physical or chemical process this scheme represent
 | Other inputs | |
 | Information to MPAS-A | |
 | Considerations | |
-| Equations and references | |
 
 ## Classification
 

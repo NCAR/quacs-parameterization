@@ -22,7 +22,6 @@ Soil moisture increases the threshold. The scheme sets the flux to zero over wat
 | Other inputs | Empirical constant `C` (set in the script or in a namelist). Particle radius and density for each bin. |
 | Information to MPAS-A | Dust emission flux `F_p` [x, y, dust bin]. The host model adds it to the dust concentrations. |
 | Considerations | The dust species must be in MPAS-A and mapped to its dust bins, or MICM must add them. Dust has dry deposition. Heterogeneous reactions on dust change ozone. |
-| Equations and references | `u_thresh = max(0, u_t (1.2 + 0.2 log10(max(gwet, 1e-3))))`; `F_p = C S s_p (1 - frlake) w10m^2 max(w10m - u_thresh, 0)` (Ginoux et al., 2001, Eq. 1) |
 
 ## Classification
 

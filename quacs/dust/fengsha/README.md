@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | A_n = 0.0123, Gamma = 1.65e-4 kg s-2. Soil moisture correction from Fécan et al. (1999). Roughness length z0 from FPAR (Foroutan et al., 2017). |
 | Information to MPAS-A | Vertical dust flux F [x, y], split into accumulation mode (mass fraction 0.07, Dp,g = 1.39 um) and coarse mode (mass fraction 0.93, Dp,g = 5.26 um), sigma_g = 2 |
 | Considerations | The scheme computes u* and z0 itself. They do not come from MPAS-A. Dust has dry deposition. |
-| Equations and references | u_t0(D) = sqrt(A_n rho_p g D / rho_air + Gamma / (rho_air D)); u*_t = u_t0 sqrt(1 + 1.21 (w - w')^0.68) for w > w'; z0 = 0.96 lambda^1.07 h_veg; u* = kappa u10 / ln(z_ref / z0); Q = (rho_air / g) u*^3 (1 + u*_t/u*) (1 - u*_t^2/u*^2); F = alpha Q |
 
 ## Classification
 

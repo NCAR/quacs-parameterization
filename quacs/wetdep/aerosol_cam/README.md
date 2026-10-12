@@ -26,7 +26,6 @@ This CAM bulk scheme is a second scheme in the same class.
 | Other inputs | Solubility factors (`sol_fact`, `sol_facti`, `sol_factic`), below-cloud scavenging coefficient `scavcoef` (default 0.1 mm-1) |
 | Information to MPAS-A | Tracer tendency, surface wet deposition flux. For MICM: first-order loss rates `k_strat + k_conv` and a resuspension source for each level. |
 | Considerations | The scheme needs the vertical structure of the column. It sweeps from the model top (k = 0) to the surface, because the precipitation flux into each layer comes from the layers above. The cloud-borne branch, the MAM size-dependent below-cloud coefficients, and the ice and snow factors are not ported. |
-| Equations and references | Rate equations are in the docstring of `wetdep_cam.py`. Rasch et al. (2000); Barth et al. (2000); Dana and Hales (1976). |
 
 ## Classification
 

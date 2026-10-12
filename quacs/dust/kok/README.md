@@ -23,7 +23,6 @@ The output is one total flux. The scheme does not split the flux into size bins.
 | Other inputs | Tuning constant `C_tune` (default 0.05), median soil particle diameter `Dp` (default 75 um), particle density `rhop`, Fécan coefficient `a`, vegetation threshold `vai_thr` (default 0.3) |
 | Information to MPAS-A | Total dust emission flux `F_d` [x, y]. It must be split into the dust species or modes of the host model. |
 | Considerations | The scheme gives one total flux. The host model must split it into size bins or modes, for example with the brittle-fragmentation size distribution (Kok, 2011). The clay fraction in the flux is capped at 0.2. Dust has dry deposition. |
-| Equations and references | u_st = u_ft sqrt(rho_a / rho_a0); C_d = C_d0 exp(-C_e (u_st - u_st0) / u_st0); kappa = C_kappa (u_st - u_st0) / u_st0; F_d = C_tune C_d f_bare f_clay rho_a (u*^2 - u_t^2) / u_st (u* / u_t)^kappa for u* > u_t |
 
 ## Classification
 

@@ -23,7 +23,6 @@ The adapter `biogenic_emission_megan_v3.py` gives one function call with scalar 
 | Other inputs | VOC emission factors and light-dependent fractions (species and PFT dependent). Past-day statistics: 24-h mean temperature and PPFD, 10-day mean temperature, daily maximum and minimum temperature, daily maximum wind. |
 | Information to MPAS-A | Emission flux of each VOC class, added to the concentration fields |
 | Considerations | The model must map MEGAN classes to the CheMPAS-A species. The canopy model is part of this scheme; it can become a separate target parameterization. The host model must keep the past-day statistics. The upstream code averages the canopy state across PFTs before it computes the nonlinear activity responses. The adapter keeps this behavior. |
-| Equations and references | Guenther et al. (2012, 2020); https://bai.ess.uci.edu/megan |
 
 ## Classification
 

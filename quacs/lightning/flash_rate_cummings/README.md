@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | None |
 | Information to MPAS-A | Intracloud flash rate IC_FR and cloud-to-ground flash rate CG_FR (flashes s-1) |
 | Considerations | zkm is a bulk storm property, so the scheme must find a storm region. |
-| Equations and references | total_FR = 3.44e-5 zkm^4.9 / 60 (land); 6.57e-6 zkm^4.9 / 60 (ocean); distributed to cells with refl > 20 dBZ; zkm = height above ground of the highest 20 dBZ level with T < 0 C |
 
 ## Classification
 

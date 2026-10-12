@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Hygroscopicity (kappa) and mean number radius (r_m) |
 | Information to MPAS-A | Water-friendly aerosol (WFA) and ice-friendly aerosol (IFA) number concentration [x, y, z] |
 | Considerations | Derive r_m and kappa from GOCART-2G assumptions, not from fixed values. Other processes, such as coagulation, change the CCN size. |
-| Equations and references | CCN activation lookup table from a parcel model [T, W, Nt, kappa, r_m] (Eidhammer et al., 2009) |
 
 ## Classification
 

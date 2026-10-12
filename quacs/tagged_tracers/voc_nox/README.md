@@ -28,7 +28,6 @@ The 1-D transport operator in this folder is only for the test. It is not a repl
 | Other inputs | T, RH or q, wind speed and direction, solar radiation, precipitation. The prototype uses a constant wind (`u_adv`) and diffusivity (`K_diff`). |
 | Information to MPAS-A | VOC and NOx concentrations tagged by emission sector (anthropogenic, boundary conditions, biomass burning, biogenic, chemistry) or by region (U.S. states, counties). The prototype gives CO and `CO_tracer` tagged by one source cell. |
 | Considerations | Boundary condition tracers need spin-up time to mix into the model. Each VOC species must be available to tag and analyze. Input files must have a list of U.S. states and counties with numeric IDs and areas, so that geographic tracers are easy to add. Process analysis must show how transport, mixing, emissions, and chemistry change each tracer. |
-| Equations and references | Lapaşcu & Butler (2019) |
 
 ## Classification
 

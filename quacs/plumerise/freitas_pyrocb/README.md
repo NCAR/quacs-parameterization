@@ -30,7 +30,6 @@ The current code is a reference workflow with these limits:
 | Other inputs | Vegetation class, fire size, lookup tables for the smoldering and flaming mass split and the heat flux |
 | Information to MPAS-A | The vertical distribution of smoke emissions. If the scheme flags a pyroCb, a fraction of the smoke goes into the upper troposphere and lower stratosphere. |
 | Considerations | The scheme must handle a regime change between the normal mode and the pyroCb mode. |
-| Equations and references | Add a pyroCb trigger to the 1-D scheme, after the framework of Peterson et al. (2017). Link the smoke updraft back to the host model, after Ma and Jones (2025). |
 
 ## Classification
 

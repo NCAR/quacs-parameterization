@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | O3 mixing ratio, uptake coefficient gamma_O3 = 5e-5, dust effective radius and density, mean molecular speed of each gas |
 | Information to MPAS-A | First-order loss rates for O3 (and other gases) as sink terms in the chemistry solver |
 | Considerations | Also consider HNO3 (0.1), N2O5 (0.01-0.02), NO3 (1e-3), HO2 (0.2), and H2O2 (1e-3) uptake. Needs coupling to the gas-phase solver. |
-| Equations and references | k = (1/4) gamma omega S_a for each gas |
 
 ## Classification
 

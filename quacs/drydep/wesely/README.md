@@ -25,7 +25,6 @@ The box model converts Vd to a first-order loss rate k = Vd / H.
 | Other inputs | Species properties: effective Henry's law constant at 298 K, its temperature dependence, reactivity factor f0, molar mass (`SPECIES_TABLE`). Month and latitude to select the season. Box height H. |
 | Information to MPAS-A | Dry deposition velocity for each species. First-order loss rate k = Vd / H for each species. |
 | Considerations | The target list asks if Vd belongs in "physics" or "chemistry". In GOCART-2G, the PBL scheme does the mixing and deposition, but the chemistry code computes Vd. This implementation selects the season from the month and the latitude. CAM uses LAI data for this. See the open issues below. |
-| Equations and references | Vd = 1 / (Ra + Rb + Rc); Rc = 1 / (1/Rsmx + 1/Rlu + 1/(Rdc + Rcl) + 1/(Rac + Rgs)). Wesely (1989); Walcek et al. (1986). |
 
 ## Classification
 

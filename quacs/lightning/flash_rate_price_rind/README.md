@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Cloud-top height adjustment (km) |
 | Information to MPAS-A | Intracloud flash rate IC_FR and cloud-to-ground flash rate CG_FR (flashes s-1) |
 | Considerations | IC and CG can be split by a fixed ratio, by a dataset, or from storm properties. The coefficients A to E are prescribed. |
-| Equations and references | total_FR = 3.44e-5 zkm^4.9 / 60 (land); 6.57e-6 zkm^4.9 / 60 (ocean); total_FR = total_FR dA / baseArea; IC_FR = total_FR (((A depth + B) depth C) depth + D) depth E; depth = (z_LNB - z_0C) 1e-3 + cldtop_adjustment, 5.5 < depth < 14 |
 
 ## Classification
 

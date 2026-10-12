@@ -21,7 +21,6 @@ The inputs and outputs are a first draft. Change them when you implement the sch
 | Other inputs | Snow properties from the land surface model: number of snow layers, thickness, snow depth, density, temperature of each layer. LAP deposition fluxes and mass mixing ratios. BC-snow mixing state. |
 | Information to MPAS-A | Spectral snow albedo, absorbed solar flux in each snow layer |
 | Considerations | Needs a land surface model. |
-| Equations and references | Flanner et al. (2021) |
 
 ## Classification
 

@@ -26,7 +26,6 @@ MICM does the time integration.
 | Other inputs | Uptake coefficients (gamma) and product yields, depletion factor bounds, `SSAdehal_ScalingFactor` (CAM namelist, default 1.0) |
 | Information to MPAS-A | First-order rate constants (s-1) that go to MICM as `USER.het_ss_0`, `USER.het_ss_1`, `USER.het_ss_2`. MICM returns updated BrONO2, BrNO2, HOBr, Br2, and BrCl. |
 | Considerations | See [Considerations](#considerations) |
-| Equations and references | See [Equations](#equations) and [References](#references) |
 
 ## Classification
 

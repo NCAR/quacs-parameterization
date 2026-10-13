@@ -1,0 +1,49 @@
+# MEGAN3.21 configuration. Relative paths are resolved from this YAML file's directory.
+files:
+  inputs:  # Input datasets: do not write model-generated files here.
+    growthform_file: inputs/grid_growthform.csv  # Grid ecotype and growth-form fractions for EF preprocessing.
+    pft_fractions_file: inputs/PFT_Fraction.csv  # Canopy/PFT fractions for the target grid cell (percent).
+    canopy_characteristic_file: inputs/canopy_characteristic.csv  # Rows = named canopy properties; columns = canopy types.
+    activity_class_parameters_file: inputs/activity_class_parameters.csv  # Per-emission-class response coefficients and LDF rules.
+    raw_ef_files:  # Original EF tables used to derive grid-cell emission factors.
+      plant_ef: inputs/EFv240120.csv  # Plant-level emission factors and optional LDF columns.
+      speciation:  # Growth-form-specific speciation tables; keys must match configured growth forms.
+        tree:  # Tree growth form.
+          file: inputs/SpeciationTree230921.csv  # Tree speciation table.
+          specfrac_column: treeSpecfrac  # Column containing tree species fractions.
+        shrub:  # Shrub growth form.
+          file: inputs/SpeciationShrub230822.csv  # Shrub speciation table.
+          specfrac_column: ShrubSpecFrac  # Column containing shrub species fractions.
+        herb:  # Herbaceous growth form.
+          file: inputs/SpeciationHerb230822.csv  # Herbaceous speciation table.
+          specfrac_column: HerbSpecFrac  # Column containing herbaceous species fractions.
+        crop:  # Crop growth form.
+          file: inputs/SpeciationCrop230822.csv  # Crop speciation table.
+          specfrac_column: CropSpecFrac  # Column containing crop species fractions.
+
+    mapping_files:  # Explicit MGN2MECH mapping inputs (no implicit mapping_dir lookup).
+      species_catalog: inputs/species_catalog.csv  # Official species IDs and names; checked against n_species.
+      class_to_species: inputs/class_to_species.csv  # Emission-class to chemical-species mapping.
+      species_to_CBMZ: inputs/species_to_CBMZ.csv  # Species-to-CBMZ mapping; duplicate source/target pairs are errors.
+  intermediate_outputs:  # Generated preprocessing products, not final atmospheric concentrations.
+    ef_ldf_output: intermediate_outputs/EF_LDF.csv  # Computed grid emission factors and light-dependent fractions.
+  outputs:  # Final driver results; the same text is printed to the terminal.
+    result_file: outputs/megan_results.txt  # Plain-text copy of all driver stdout, overwritten on each run.
+
+model:
+  mechanism: CBMZ  # Target chemical mechanism: CBMZ or SPECIES (unmapped species output).
+  n_class: 19  # Declared emission-class count; validated against class metadata.
+  n_species: 201  # Declared chemical-species count; validated against species catalog.
+  NLayers: 5  # Number of vertical canopy integration layers.
+  NRTYP: 6  # Number of canopy types; validated against canopy characteristic columns.
+  NGFORM: 4  # Number of growth forms; validated against raw_ef_files.speciation entries.
+  canopy_layer_method: gaussian  # Vertical canopy quadrature method. [gaussian,uniform]
+
+activity_switches:  # Enable/disable MEGAN activity responses (true/false).
+  GAMBD_YN: true  # Bidirectional LAI activity response.
+  GAMAQ_YN: true  # Air-quality response switch.
+  GAMHT_YN: false  # High-temperature stress response.
+  GAMLT_YN: false  # Low-temperature stress response.
+  GAMHW_YN: false  # High-wind response.
+  GAMSM_YN: false  # Soil-moisture response; requires kc_7d when enabled.
+  GAMCO2_YN: false  # CO2 response.

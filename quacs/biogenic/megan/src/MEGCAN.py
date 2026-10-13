@@ -11,9 +11,7 @@ The public wrappers are retained so existing scripts remain usable.
 
 from __future__ import annotations
 
-from typing import NamedTuple
-
-import numpy as np
+import csv as _csv
 
 # ---------------------------------------------------------------------------
 # Canopy characteristics
@@ -45,37 +43,166 @@ import numpy as np
 #  14 cool-canopy total humidity change (Pa)
 #  15 normalized canopy depth where wind becomes negligible
 #  16 canopy transparency
-CANOPY_CHARACTERISTICS = np.array(
-    [
-        [16.0, 16.0, 16.0, 1.0, 0.5, 1.0],
-        [0.005, 0.05, 0.05, 0.015, 0.01, 0.02],
-        [0.1, 0.1, 0.1, 0.1, 0.15, 0.15],
-        [24.0, 24.0, 24.0, 2.0, 0.5, 1.0],
-        [0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
-        [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
-        [0.057, 0.057, 0.057, 0.057, 0.057, 0.057],
-        [0.389, 0.389, 0.389, 0.389, 0.389, 0.389],
-        [0.85, 1.1, 0.9, 0.85, 0.7, 0.65],
-        [0.95, 0.95, 0.95, 0.95, 0.95, 0.95],
-        [1.25, 1.25, 1.25, 1.0, 1.25, 1.25],
-        [0.06, 0.06, 0.06, 0.06, 0.06, 0.06],
-        [-0.06, -0.06, -0.06, -0.06, -0.06, -0.06],
-        [700.0, 700.0, 700.0, 700.0, 700.0, 700.0],
-        [150.0, 150.0, 150.0, 150.0, 150.0, 150.0],
-        [0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
-        [0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
-    ],
-    dtype=float,
+# Canopy parameters are loaded from one shared CSV, not hard-coded in Python.
+from pathlib import Path as _Path
+from typing import NamedTuple
+
+import numpy as np
+from numpy.polynomial.legendre import leggauss
+
+_REQUIRED_CHARACTERISTICS = (
+    "canopy_depth_m",
+    "leaf_width_m",
+    "leaf_length_m",
+    "canopy_height_m",
+    "visible_scattering_coefficient",
+    "near_ir_scattering_coefficient",
+    "diffuse_visible_reflection_coefficient",
+    "diffuse_near_ir_reflection_coefficient",
+    "leaf_clustering_coefficient",
+    "leaf_ir_emissivity",
+    "stomata_cuticle_factor",
+    "daytime_temperature_lapse_rate_K_m-1",
+    "nighttime_temperature_lapse_rate_K_m-1",
+    "warm_canopy_humidity_change_Pa",
+    "cool_canopy_humidity_change_Pa",
+    "normalized_no_wind_depth",
+    "canopy_transparency",
 )
 
-N_CANOPY_TYPES = 6
-N_CANOPY_CHARACTERISTICS = 17
+
+def load_canopy_characteristics(path=None):
+    """Read canopy table by characteristic and type name, independent of row order."""
+    if path is None:
+        path = _Path(__file__).resolve().parent.parent / "inputs" / "canopy_characteristic.csv"
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        reader = _csv.DictReader(f)
+        if not reader.fieldnames or reader.fieldnames[0] != "Characteristic":
+            raise ValueError("First canopy CSV column must be Characteristic")
+        types = tuple(reader.fieldnames[1:])
+        if not types or len(set(types)) != len(types):
+            raise ValueError("Canopy types must be nonempty and unique")
+        rows = list(reader)
+    names = [r["Characteristic"] for r in rows]
+    if len(set(names)) != len(names):
+        raise ValueError("Duplicate canopy characteristic names")
+    missing = set(_REQUIRED_CHARACTERISTICS) - set(names)
+    if missing:
+        raise ValueError(f"Missing required canopy characteristics: {sorted(missing)}")
+    try:
+        matrix = np.array([[float(row[t]) for t in types] for row in rows], dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise ValueError("Invalid canopy characteristic value") from exc
+    if not np.isfinite(matrix).all():
+        raise ValueError("Canopy characteristics must be finite")
+    return dict(zip(names, matrix)), types
+
+
+CANOPY_CHARACTERISTICS, CANOPY_TYPE_NAMES = load_canopy_characteristics()
+
+
+def configure_canopy(path):
+    """Update canopy data for this process before model evaluation."""
+    global CANOPY_CHARACTERISTICS, CANOPY_TYPE_NAMES, N_CANOPY_TYPES, N_CANOPY_CHARACTERISTICS
+    CANOPY_CHARACTERISTICS, CANOPY_TYPE_NAMES = load_canopy_characteristics(path)
+    N_CANOPY_TYPES = len(CANOPY_TYPE_NAMES)
+    N_CANOPY_CHARACTERISTICS = len(CANOPY_CHARACTERISTICS)
+
+
+def canopy_characteristic(name, canopy_type):
+    return CANOPY_CHARACTERISTICS[name][canopy_type]
+
+
+# ---------------------------------------------------------------------------
+# Constants and Variables
+# ---------------------------------------------------------------------------
+# Solar geometry and incident-radiation partition (formerly TIMEFUNC.py).
+_DEGREES_PER_RADIAN = 57.29578  # 180/Pi
+_PI_APPROX = 3.14159  # Pi
 STEFAN_BOLTZMANN = 5.67e-8  # W m-2 K-4
 
-# Original public constants retained for compatibility.
-Canopychar = CANOPY_CHARACTERISTICS
-NrTyp = N_CANOPY_TYPES
-NrCha = N_CANOPY_CHARACTERISTICS
+N_CANOPY_TYPES = len(CANOPY_TYPE_NAMES)
+N_CANOPY_CHARACTERISTICS = len(CANOPY_CHARACTERISTICS)
+
+
+def solar_elevation_angle(day_of_year: float, latitude_deg: float, hour: float) -> float:
+    """Calculate solar elevation angle in degrees.
+
+    Notes
+    -----
+    The equation is retained from the original MEGAN canopy implementation.
+    Despite the old comment calling this a zenith angle, the returned value is
+    the *solar elevation* angle because its sine is used directly downstream.
+    """
+
+    sin_declination = -np.sin(0.40907) * np.cos(6.28 * (day_of_year + 10.0) / 365.0)
+    cos_declination = np.sqrt(1.0 - sin_declination**2)
+
+    latitude_radians = latitude_deg / _DEGREES_PER_RADIAN
+    term_a = np.sin(latitude_radians) * sin_declination
+    term_b = np.cos(latitude_radians) * cos_declination
+    sin_elevation = term_a + term_b * np.cos(2.0 * _PI_APPROX * (hour - 12.0) / 24.0)
+
+    # Numerical roundoff can produce values just outside [-1, 1].
+    sin_elevation = np.clip(sin_elevation, -1.0, 1.0)
+    return float(np.arcsin(sin_elevation) * _DEGREES_PER_RADIAN)
+
+
+def solar_eccentricity_factor(day_of_year: float) -> float:
+    """Return the Earth-Sun distance correction used by the canopy model."""
+
+    return float(1.0 + 0.033 * np.cos(2.0 * 3.14 * (day_of_year - 10.0) / 365.0))
+
+
+def partition_solar_radiation(
+    solar_w_m2: float, maximum_solar_w_m2: float
+) -> tuple[float, float, float, float]:
+    """Partition solar radiation into direct/diffuse visible and near-IR terms.
+
+    Parameters
+    ----------
+    solar_w_m2
+        Observed incoming solar radiation.
+    maximum_solar_w_m2
+        Potential maximum solar radiation calculated from solar geometry.
+
+    Returns
+    -------
+    q_diffuse_visible, q_beam_visible, q_diffuse_nir, q_beam_nir
+        Radiation components in W m-2.
+    """
+
+    if maximum_solar_w_m2 <= 0.0:
+        transmissivity = 0.5
+    elif maximum_solar_w_m2 < solar_w_m2:
+        transmissivity = 1.0
+    else:
+        transmissivity = solar_w_m2 / maximum_solar_w_m2
+
+    # Diffuse fraction based on Lizaso et al. (2005), as in the source code.
+    diffuse_fraction = 0.156 + 0.86 / (1.0 + np.exp(11.1 * (transmissivity - 0.53)))
+
+    # Visible (PPFD) fraction based on Goudriaan and van Laar (1994).
+    visible_fraction = 0.55 - transmissivity * 0.12
+
+    # Diffuse visible fraction based on Jacovides et al. (2007).
+    visible_diffuse_fraction = diffuse_fraction * (1.06 + transmissivity * 0.4)
+    visible_diffuse_fraction = min(visible_diffuse_fraction, 1.0)
+
+    visible = visible_fraction * solar_w_m2
+    q_diffuse_visible = visible * visible_diffuse_fraction
+    q_beam_visible = visible - q_diffuse_visible
+
+    near_ir = solar_w_m2 - visible
+    q_diffuse_nir = near_ir * diffuse_fraction
+    q_beam_nir = near_ir - q_diffuse_nir
+
+    return (
+        float(q_diffuse_visible),
+        float(q_beam_visible),
+        float(q_diffuse_nir),
+        float(q_beam_nir),
+    )
 
 
 class CanopyRadiationProfile(NamedTuple):
@@ -124,29 +251,42 @@ class CanopyEnergyBalanceProfile(NamedTuple):
     shade_stomatal_resistance: np.ndarray
 
 
-def gaussian_layer_positions(number_of_layers: int) -> np.ndarray:
-    """Return normalized canopy-depth positions for numerical quadrature."""
+def canopy_layer_quadrature(
+    number_of_layers: int, method: str = "gaussian"
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return canopy-depth nodes and matching integration weights on [0, 1].
 
-    if number_of_layers <= 0:
-        raise ValueError("number_of_layers must be positive")
-    if number_of_layers == 1:
-        return np.array([0.5], dtype=float)
-    if number_of_layers == 3:
-        return np.array([0.112702, 0.5, 0.887298], dtype=float)
-    if number_of_layers == 5:
-        return np.array(
-            [0.0469101, 0.2307534, 0.5, 0.7692465, 0.9530899],
-            dtype=float,
-        )
-    return (np.arange(number_of_layers, dtype=float) + 0.5) / number_of_layers
+    gaussian: Gauss-Legendre quadrature; uniform: equal-width midpoint rule.
+    """
+    if (
+        isinstance(number_of_layers, (bool, np.bool_))
+        or not isinstance(number_of_layers, (int, np.integer))
+        or number_of_layers < 1
+    ):
+        raise ValueError("number_of_layers must be a positive integer")
+    if method not in ("gaussian", "uniform"):
+        raise ValueError("method must be 'gaussian' or 'uniform'")
+
+    if method == "gaussian":
+        nodes, weights = leggauss(number_of_layers)
+        return (nodes + 1.0) / 2.0, weights / 2.0
+
+    nodes = (np.arange(number_of_layers, dtype=float) + 0.5) / number_of_layers
+    weights = np.full(number_of_layers, 1.0 / number_of_layers, dtype=float)
+    return nodes, weights
+
+
+def gaussian_layer_positions(number_of_layers: int) -> np.ndarray:
+    """Return Gaussian canopy nodes for callers using the previous API."""
+    return canopy_layer_quadrature(number_of_layers, "gaussian")[0]
 
 
 def canopy_temperature_lapse_rate(canopy_type: int, solar_w_m2: float) -> float:
     """Return the canopy air-temperature lapse rate for current radiation."""
 
     transition_solar = 500.0
-    daytime_rate = CANOPY_CHARACTERISTICS[11, canopy_type]
-    nighttime_rate = CANOPY_CHARACTERISTICS[12, canopy_type]
+    daytime_rate = canopy_characteristic("daytime_temperature_lapse_rate_K_m-1", canopy_type)
+    nighttime_rate = canopy_characteristic("nighttime_temperature_lapse_rate_K_m-1", canopy_type)
 
     if solar_w_m2 > transition_solar:
         return float(daytime_rate)
@@ -271,7 +411,7 @@ def canopy_radiation(
     absorbed_diffuse_nir = np.zeros(number_of_layers, dtype=float)
     absorbed_scattered_nir = np.zeros(number_of_layers, dtype=float)
 
-    canopy_transparency = CANOPY_CHARACTERISTICS[16, canopy_type]
+    canopy_transparency = canopy_characteristic("canopy_transparency", canopy_type)
     adjusted_lai = lai / (1.0 - canopy_transparency)
 
     is_daytime = (
@@ -300,11 +440,15 @@ def canopy_radiation(
             absorbed_scattered_nir,
         )
 
-    scattering_visible = CANOPY_CHARACTERISTICS[4, canopy_type]
-    scattering_nir = CANOPY_CHARACTERISTICS[5, canopy_type]
-    diffuse_reflection_visible = CANOPY_CHARACTERISTICS[6, canopy_type]
-    diffuse_reflection_nir = CANOPY_CHARACTERISTICS[7, canopy_type]
-    clustering = CANOPY_CHARACTERISTICS[8, canopy_type]
+    scattering_visible = canopy_characteristic("visible_scattering_coefficient", canopy_type)
+    scattering_nir = canopy_characteristic("near_ir_scattering_coefficient", canopy_type)
+    diffuse_reflection_visible = canopy_characteristic(
+        "diffuse_visible_reflection_coefficient", canopy_type
+    )
+    diffuse_reflection_nir = canopy_characteristic(
+        "diffuse_near_ir_reflection_coefficient", canopy_type
+    )
+    clustering = canopy_characteristic("leaf_clustering_coefficient", canopy_type)
 
     # Black-leaf extinction coefficients, assuming a spherical leaf-angle
     # distribution (0.5 = cos(60 degrees)).
@@ -613,15 +757,15 @@ def canopy_energy_balance(
     sun_stomatal_resistance = np.zeros(number_of_layers, dtype=float)
     shade_stomatal_resistance = np.zeros(number_of_layers, dtype=float)
 
-    canopy_depth = CANOPY_CHARACTERISTICS[0, canopy_type]
-    leaf_width = CANOPY_CHARACTERISTICS[1, canopy_type]
-    leaf_length = CANOPY_CHARACTERISTICS[2, canopy_type]
-    canopy_height = CANOPY_CHARACTERISTICS[3, canopy_type]
-    emissivity = CANOPY_CHARACTERISTICS[9, canopy_type]
-    transpiration_type = CANOPY_CHARACTERISTICS[10, canopy_type]
-    warm_humidity_change = CANOPY_CHARACTERISTICS[13, canopy_type]
-    cool_humidity_change = CANOPY_CHARACTERISTICS[14, canopy_type]
-    normalized_no_wind_depth = CANOPY_CHARACTERISTICS[15, canopy_type]
+    canopy_depth = canopy_characteristic("canopy_depth_m", canopy_type)
+    leaf_width = canopy_characteristic("leaf_width_m", canopy_type)
+    leaf_length = canopy_characteristic("leaf_length_m", canopy_type)
+    canopy_height = canopy_characteristic("canopy_height_m", canopy_type)
+    emissivity = canopy_characteristic("leaf_ir_emissivity", canopy_type)
+    transpiration_type = canopy_characteristic("stomata_cuticle_factor", canopy_type)
+    warm_humidity_change = canopy_characteristic("warm_canopy_humidity_change_Pa", canopy_type)
+    cool_humidity_change = canopy_characteristic("cool_canopy_humidity_change_Pa", canopy_type)
+    normalized_no_wind_depth = canopy_characteristic("normalized_no_wind_depth", canopy_type)
 
     if above_canopy_temperature_k > 288.0:
         humidity_gradient = warm_humidity_change / canopy_height
@@ -726,226 +870,4 @@ def canopy_energy_balance(
 def adjusted_lai(lai: float, canopy_type: int) -> float:
     """Return LAI adjusted for canopy transparency."""
 
-    return float(lai / (1.0 - CANOPY_CHARACTERISTICS[16, canopy_type]))
-
-
-# ---------------------------------------------------------------------------
-# Backward-compatible wrappers using the original public names and return order
-# ---------------------------------------------------------------------------
-
-
-def GaussianDist(NLayers: int) -> np.ndarray:
-    """Legacy alias of :func:`gaussian_layer_positions`."""
-
-    return gaussian_layer_positions(NLayers)
-
-
-def Stability(Cantype: int, Solar: float) -> float:
-    """Legacy alias of :func:`canopy_temperature_lapse_rate`."""
-
-    return canopy_temperature_lapse_rate(Cantype, Solar)
-
-
-def WaterVapPres(Dens: float, Pres: float) -> float:
-    """Legacy alias converting mixing ratio to vapor pressure."""
-
-    return mixing_ratio_to_vapor_pressure(Dens, Pres)
-
-
-def RHtoWaterVapPres(RH: float, T: float) -> float:
-    """Legacy alias converting relative humidity to vapor pressure."""
-
-    return relative_humidity_to_vapor_pressure(RH, T)
-
-
-def WaterVapPrestoRH(WVP: float, T: float) -> float:
-    """Legacy alias converting vapor pressure to relative humidity."""
-
-    return vapor_pressure_to_relative_humidity(WVP, T)
-
-
-def CalcExtCoeff(Qbeam: float, scat: float, kb: float, kd: float) -> list[float]:
-    """Legacy list-returning wrapper for extinction coefficients."""
-
-    return list(radiation_extinction_coefficients(Qbeam, scat, kb, kd))
-
-
-def CalcRadComponents(
-    Qdiff: float,
-    Qbeam: float,
-    Kdp: float,
-    Kbp: float,
-    Kb: float,
-    Scat: float,
-    Refld: float,
-    Reflb: float,
-    LAIdepth: float,
-) -> tuple[float, float]:
-    """Legacy wrapper for absorbed diffuse and scattered radiation."""
-
-    return absorbed_radiation_components(Qdiff, Qbeam, Kdp, Kbp, Kb, Scat, Refld, Reflb, LAIdepth)
-
-
-def CanopyRad(
-    Distgauss: np.ndarray,
-    layers: int,
-    LAI: float,
-    Sinbeta: float,
-    Qbeamv: float,
-    Qdiffv: float,
-    Qbeamn: float,
-    Qdiffn: float,
-    Cantype: int,
-) -> list[object]:
-    """Legacy list-returning wrapper for canopy radiation profiles."""
-
-    profile = list(
-        canopy_radiation(
-            Distgauss,
-            layers,
-            LAI,
-            Sinbeta,
-            Qbeamv,
-            Qdiffv,
-            Qbeamn,
-            Qdiffn,
-            Cantype,
-        )
-    )
-    # Preserve an original return-type inconsistency for older external code:
-    # at night QbAbsN remained its initialized zero array, whereas QbAbsV was
-    # replaced by scalar zero.  The modern ``canopy_radiation`` API returns
-    # scalars consistently; only this compatibility wrapper reproduces the old
-    # nighttime list shape.
-    adjusted = LAI / (1.0 - CANOPY_CHARACTERISTICS[16, Cantype])
-    is_daytime = Qbeamv + Qdiffv > 0.001 and Sinbeta > 0.002 and adjusted > 0.001
-    if not is_daytime:
-        profile[2] = np.zeros(layers, dtype=float)
-    return profile
-
-
-def ResSC(PPFD: float) -> float:
-    """Legacy alias of :func:`stomatal_resistance`."""
-
-    return stomatal_resistance(PPFD)
-
-
-def LHV(Tk: float) -> float:
-    """Legacy alias of :func:`latent_heat_of_vaporization`."""
-
-    return latent_heat_of_vaporization(Tk)
-
-
-def LeafIR(Tk: float, Eps: float) -> float:
-    """Legacy alias of :func:`leaf_ir_emission`."""
-
-    return leaf_ir_emission(Tk, Eps)
-
-
-def ExposedLeafIRin(HumidPa: float, Tk: float) -> float:
-    """Legacy alias of :func:`exposed_leaf_ir_input`."""
-
-    return exposed_leaf_ir_input(HumidPa, Tk)
-
-
-def LeafBLC(GHforced: float, Tdelta: float, Llength: float) -> float:
-    """Legacy alias of :func:`leaf_boundary_layer_conductance`."""
-
-    return leaf_boundary_layer_conductance(GHforced, Tdelta, Llength)
-
-
-def LeafH(Tdelta: float, GH: float) -> float:
-    """Legacy alias of :func:`leaf_sensible_heat`."""
-
-    return leaf_sensible_heat(Tdelta, GH)
-
-
-def LeafLE(
-    Tleaf: float,
-    Ambvap: float,
-    LatHv: float,
-    GH: float,
-    StomRes: float,
-    TranspireType: float,
-) -> float:
-    """Legacy alias of :func:`leaf_latent_heat`."""
-
-    return leaf_latent_heat(Tleaf, Ambvap, LatHv, GH, StomRes, TranspireType)
-
-
-def LeafEB(
-    PPFD: float,
-    Q: float,
-    IRin: float,
-    Eps: float,
-    TranspireType: float,
-    Lwidth: float,
-    Llength: float,
-    TairK: float,
-    HumidairPa: float,
-    Ws: float,
-) -> list[float]:
-    """Legacy list-returning wrapper for one-leaf energy balance."""
-
-    return list(
-        leaf_energy_balance(
-            PPFD,
-            Q,
-            IRin,
-            Eps,
-            TranspireType,
-            Lwidth,
-            Llength,
-            TairK,
-            HumidairPa,
-            Ws,
-        )
-    )
-
-
-def CanopyEB(
-    Trate: float,
-    Layers: int,
-    Distgauss: np.ndarray,
-    Cantype: int,
-    TairK0: float,
-    Ws0: float,
-    SunPPFD: np.ndarray,
-    ShadePPFD: np.ndarray,
-    SunQv: np.ndarray,
-    ShadeQv: np.ndarray,
-    SunQn: np.ndarray,
-    ShadeQn: np.ndarray,
-    HumidairPa0: float,
-) -> list[np.ndarray]:
-    """Legacy list-returning wrapper for canopy energy balance."""
-
-    return list(
-        canopy_energy_balance(
-            Trate,
-            Layers,
-            Distgauss,
-            Cantype,
-            TairK0,
-            Ws0,
-            SunPPFD,
-            ShadePPFD,
-            SunQv,
-            ShadeQv,
-            SunQn,
-            ShadeQn,
-            HumidairPa0,
-        )
-    )
-
-
-def laiadj(laic: float, S: int) -> float:
-    """Legacy alias of :func:`adjusted_lai`."""
-
-    return adjusted_lai(laic, S)
-
-
-def CalcwaterVPpa(RH: float, tk: float) -> float:
-    """Legacy Tetens helper retained with its original kPa return units."""
-
-    return float(RH * 0.01 * (0.6112 * np.exp((17.67 * (tk - 273.16)) / (tk - 29.66))))
+    return float(lai / (1.0 - canopy_characteristic("canopy_transparency", canopy_type)))

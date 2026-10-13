@@ -1,8 +1,11 @@
 """Centralized YAML configuration and file path resolution for MEGAN."""
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
 import yaml
+
 
 @dataclass(frozen=True)
 class MeganConfig:
@@ -14,7 +17,11 @@ class MeganConfig:
         filename = Path(filename).resolve()
         with filename.open(encoding="utf-8") as handle:
             data = yaml.safe_load(handle)
-        if not isinstance(data, dict) or not isinstance(data.get("files"), dict) or not isinstance(data.get("model"), dict):
+        if (
+            not isinstance(data, dict)
+            or not isinstance(data.get("files"), dict)
+            or not isinstance(data.get("model"), dict)
+        ):
             raise ValueError("YAML requires 'files' and 'model' mappings")
         for name in ("n_class", "n_species", "NLayers", "NRTYP", "NGFORM"):
             value = data["model"].get(name)
@@ -68,10 +75,16 @@ class MeganConfig:
     @property
     def raw_ef_files(self):
         raw = self.inputs["raw_ef_files"]
-        return {"plant_ef": str(self.path(raw["plant_ef"])),
-                "speciation": {name: {"file": str(self.path(item["file"])),
-                                     "specfrac_column": item["specfrac_column"]}
-                               for name, item in raw["speciation"].items()}}
+        return {
+            "plant_ef": str(self.path(raw["plant_ef"])),
+            "speciation": {
+                name: {
+                    "file": str(self.path(item["file"])),
+                    "specfrac_column": item["specfrac_column"],
+                }
+                for name, item in raw["speciation"].items()
+            },
+        }
 
     @property
     def mapping_files(self):

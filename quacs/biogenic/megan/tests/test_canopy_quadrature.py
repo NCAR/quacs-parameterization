@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 from numpy.polynomial.legendre import leggauss
 
-from quacs.biogenic.megan.src.MEGCAN import canopy_layer_quadrature
 from quacs.biogenic.megan.biogenic_emission_megan_v3 import MeganSettings
+from quacs.biogenic.megan.src.MEGCAN import canopy_layer_quadrature
 
 
 @pytest.mark.parametrize("n", [1, 2, 3, 4, 5, 7, 9])

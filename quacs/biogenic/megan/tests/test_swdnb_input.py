@@ -1,6 +1,7 @@
 """SWDNB interface contract tests."""
+
 import inspect
-import pytest
+
 from quacs.biogenic.megan import biogenic_emission_megan_v3 as adapter
 
 

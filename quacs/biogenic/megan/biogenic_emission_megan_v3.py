@@ -7,19 +7,20 @@ before evaluating nonlinear activity responses; this adapter preserves that
 behavior for regression compatibility. Fractions are normalized to vegetated
 fractions, exactly as upstream, not grid-area fractions.
 """
-from dataclasses import dataclass
-import numpy as np
-from .src import MEGCAN, MEGVEA
 
+from dataclasses import dataclass
 
 # Online MEGAN3 canopy state, activity coupling and EF/PFT CSV support.
 # Retained from the upstream model without changing scientific equations.
 from pathlib import Path
 from typing import Literal, NamedTuple
+
+import numpy as np
 import pandas as pd
+
+from .src import MEGCAN, MEGVEA
 from .src import MEGCAN as canopy
 from .src import MEGVEA as activity
-
 
 # Advanced physical constants. Change only when the model formulation warrants it.
 SOLAR_CONSTANT_W_M2 = 1361.5
@@ -29,7 +30,8 @@ CO2_PPM = 403.0
 KC_MIN = 0.0
 KC_MAX = 0.82
 WILTING_POINT = 0.196
-HUMIDITY_MODE = 'RH'
+HUMIDITY_MODE = "RH"
+
 
 @dataclass(frozen=True)
 class ModelOptions:
@@ -144,9 +146,7 @@ def _find_column(
         if match is not None:
             return match
     if required:
-        raise ValueError(
-            "Missing required column. Expected one of: " + ", ".join(aliases)
-        )
+        raise ValueError("Missing required column. Expected one of: " + ", ".join(aliases))
     return None
 
 
@@ -181,12 +181,12 @@ def load_species_parameters(path: Path) -> SpeciesParameters:
     ldf_column = _find_column(frame, ("LDF", "Light Dependent Fraction"))
 
     names = tuple(_clean_text(value) for value in frame[category_column])
-    emission_factors = pd.to_numeric(
-        frame[emission_factor_column], errors="coerce"
-    ).to_numpy(dtype=float)
-    light_dependent_fraction = pd.to_numeric(
-        frame[ldf_column], errors="coerce"
-    ).to_numpy(dtype=float)
+    emission_factors = pd.to_numeric(frame[emission_factor_column], errors="coerce").to_numpy(
+        dtype=float
+    )
+    light_dependent_fraction = pd.to_numeric(frame[ldf_column], errors="coerce").to_numpy(
+        dtype=float
+    )
 
     if not names:
         raise ValueError("At least one species/activity class is required")
@@ -195,8 +195,8 @@ def load_species_parameters(path: Path) -> SpeciesParameters:
             f"The activity-factor tables support at most "
             f"{activity.N_ACTIVITY_CLASSES} classes; received {len(names)}"
         )
-    if names != activity.ACTIVITY_CLASS_NAMES[:len(names)]:
-        raise ValueError('EF/LDF class names/order must match activity_class_parameters.csv')
+    if names != activity.ACTIVITY_CLASS_NAMES[: len(names)]:
+        raise ValueError("EF/LDF class names/order must match activity_class_parameters.csv")
     if names[0].lower() not in ("isop", "isoprene"):
         raise ValueError(
             "The first row of the EF/LDF file must be isoprene because the "
@@ -220,9 +220,7 @@ def load_pft_parameters(path: Path) -> PFTParameters:
     fraction_column = _find_column(frame, ("Fraction", "Fraction(%)", "Percent"))
 
     names = tuple(_clean_text(value) for value in frame[pft_column])
-    fractions = pd.to_numeric(frame[fraction_column], errors="coerce").to_numpy(
-        dtype=float
-    )
+    fractions = pd.to_numeric(frame[fraction_column], errors="coerce").to_numpy(dtype=float)
 
     if len(fractions) != canopy.N_CANOPY_TYPES:
         raise ValueError(
@@ -230,14 +228,13 @@ def load_pft_parameters(path: Path) -> PFTParameters:
             f"MEGCAN order; received {len(fractions)}"
         )
     if names != canopy.CANOPY_TYPE_NAMES:
-        raise ValueError(f'PFT names/order must match canopy CSV: {canopy.CANOPY_TYPE_NAMES}')
+        raise ValueError(f"PFT names/order must match canopy CSV: {canopy.CANOPY_TYPE_NAMES}")
     if not np.all(np.isfinite(fractions)) or np.any(fractions < 0.0):
         raise ValueError("PFT fractions must be finite and non-negative")
     if fractions.sum() <= 0.0:
         raise ValueError("At least one PFT fraction must be greater than zero")
 
     return PFTParameters(names, fractions)
-
 
 
 def _water_vapor_pressure_pa(
@@ -293,9 +290,7 @@ def _calculate_canopy_state(
     sin_solar_elevation = np.sin(solar_elevation_deg / 57.29578)
     solar_w_m2 = swdnb_w_m2
     maximum_solar = (
-        sin_solar_elevation
-        * options.solar_constant_w_m2
-        * canopy.solar_eccentricity_factor(day)
+        sin_solar_elevation * options.solar_constant_w_m2 * canopy.solar_eccentricity_factor(day)
     )
     (
         diffuse_visible,
@@ -392,9 +387,7 @@ def _stress_factors(
         else 1.0
     )
     gamma_high_wind = (
-        activity.gamma_hw(species_index, daily_max_wind_m_s)
-        if controls.high_wind_response
-        else 1.0
+        activity.gamma_hw(species_index, daily_max_wind_m_s) if controls.high_wind_response else 1.0
     )
     return gamma_high_temperature, gamma_low_temperature, gamma_high_wind
 
@@ -435,29 +428,19 @@ def _calculate_record_emissions(
         current_lai,
     )
     gamma_bidirectional = (
-        activity.gamma_laibidir(current_lai)
-        if controls.bidirectional_lai_response
-        else 1.0
+        activity.gamma_laibidir(current_lai) if controls.bidirectional_lai_response else 1.0
     )
 
     # CO2 response is controlled independently by GAMCO2_YN and applies only
     # to isoprene.
-    gamma_co2_isoprene = (
-        activity.gamma_co2(options.co2_ppm) if controls.co2_response else 1.0
-    )
+    gamma_co2_isoprene = activity.gamma_co2(options.co2_ppm) if controls.co2_response else 1.0
 
     light_sun = np.array(
-        [
-            activity.gamp(value, daily_mean_ppfd)
-            for value in canopy_state.sun_ppfd
-        ],
+        [activity.gamp(value, daily_mean_ppfd) for value in canopy_state.sun_ppfd],
         dtype=float,
     )
     light_shade = np.array(
-        [
-            activity.gamp(value, daily_mean_ppfd)
-            for value in canopy_state.shade_ppfd
-        ],
+        [activity.gamp(value, daily_mean_ppfd) for value in canopy_state.shade_ppfd],
         dtype=float,
     )
 
@@ -527,8 +510,7 @@ def _calculate_record_emissions(
             )
             gamma_temperature_light += layer_weights[layer_index] * (
                 light_dependent_activity * light_dependent_fraction
-                + light_independent_activity
-                * (1.0 - light_dependent_fraction)
+                + light_independent_activity * (1.0 - light_dependent_fraction)
             )
 
         common_activity = (
@@ -550,53 +532,62 @@ def _calculate_record_emissions(
             common_activity *= gamma_bidirectional
 
         emissions[species_index] = (
-            common_activity
-            * species.emission_factors_nmol_m2_s[species_index]
+            common_activity * species.emission_factors_nmol_m2_s[species_index]
         )
 
     return emissions
 
 
 _ACTIVITY_SWITCH_NAMES = {
-    'GAMBD_YN': 'bidirectional_lai_response',
-    'GAMAQ_YN': 'air_quality_response',
-    'GAMHT_YN': 'high_temperature_response',
-    'GAMLT_YN': 'low_temperature_response',
-    'GAMHW_YN': 'high_wind_response',
-    'GAMSM_YN': 'soil_moisture_response',
-    'GAMCO2_YN': 'co2_response',
+    "GAMBD_YN": "bidirectional_lai_response",
+    "GAMAQ_YN": "air_quality_response",
+    "GAMHT_YN": "high_temperature_response",
+    "GAMLT_YN": "low_temperature_response",
+    "GAMHW_YN": "high_wind_response",
+    "GAMSM_YN": "soil_moisture_response",
+    "GAMCO2_YN": "co2_response",
 }
 _RUNTIME_SETTINGS = None
 _RUNTIME_SWITCHES = None
 
+
 def configure_runtime(config, base_dir):
     """Load numerical settings, switches and input tables once per run."""
     from pathlib import Path
+
     base_dir = Path(base_dir)
+
     def resolve(path):
         path = Path(path)
         return path if path.is_absolute() else base_dir / path
-    files = config['files']['inputs']
-    MEGCAN.configure_canopy(resolve(files['canopy_characteristic_file']))
-    MEGVEA.configure_activity(resolve(files['activity_class_parameters_file']))
-    model = config['model']
+
+    files = config["files"]["inputs"]
+    MEGCAN.configure_canopy(resolve(files["canopy_characteristic_file"]))
+    MEGVEA.configure_activity(resolve(files["activity_class_parameters_file"]))
+    model = config["model"]
     settings = MeganSettings(
-        n_class=int(model['n_class']), NLayers=int(model['NLayers']),
-        NRTYP=int(model['NRTYP']), canopy_layer_method=model['canopy_layer_method'],
+        n_class=int(model["n_class"]),
+        NLayers=int(model["NLayers"]),
+        NRTYP=int(model["NRTYP"]),
+        canopy_layer_method=model["canopy_layer_method"],
     )
     if settings.NRTYP != MEGCAN.N_CANOPY_TYPES:
-        raise ValueError(f'NRTYP={settings.NRTYP} differs from canopy CSV ({MEGCAN.N_CANOPY_TYPES})')
-    switches = {name: bool(config['activity_switches'][key])
-                for key, name in _ACTIVITY_SWITCH_NAMES.items()}
+        raise ValueError(
+            f"NRTYP={settings.NRTYP} differs from canopy CSV ({MEGCAN.N_CANOPY_TYPES})"
+        )
+    switches = {
+        name: bool(config["activity_switches"][key]) for key, name in _ACTIVITY_SWITCH_NAMES.items()
+    }
     global _RUNTIME_SETTINGS, _RUNTIME_SWITCHES
     _RUNTIME_SETTINGS, _RUNTIME_SWITCHES = settings, switches
     return settings
+
 
 @dataclass(frozen=True)
 class MeganSettings:
     n_class: int = 19
     NLayers: int = 5
-    canopy_layer_method: str = 'gaussian'  # 'gaussian' or 'uniform'
+    canopy_layer_method: str = "gaussian"  # 'gaussian' or 'uniform'
     NRTYP: int = 6
     solar_constant_w_m2: float = SOLAR_CONSTANT_W_M2
     solar_to_ppfd: float = SOLAR_TO_PPFD
@@ -606,11 +597,32 @@ class MeganSettings:
     kc_max: float = KC_MAX
 
 
-def biogenic_emission_megan_v3(*, day, hour, latitude_deg, temperature_k,
-        swdnb_w_m2, lai, previous_lai, wind_m_s, relative_humidity_percent,
-        pressure_pa, pft_fraction, emission_factor, light_dependent_fraction,
-        t24_k, t10d_k, swdnb_24h_w_m2, tmax_k, tmin_k, windmax_m_s,
-        kc_7d=np.nan, swc30d=np.nan, settings=None, switches=None):
+def biogenic_emission_megan_v3(
+    *,
+    day,
+    hour,
+    latitude_deg,
+    temperature_k,
+    swdnb_w_m2,
+    lai,
+    previous_lai,
+    wind_m_s,
+    relative_humidity_percent,
+    pressure_pa,
+    pft_fraction,
+    emission_factor,
+    light_dependent_fraction,
+    t24_k,
+    t10d_k,
+    swdnb_24h_w_m2,
+    tmax_k,
+    tmin_k,
+    windmax_m_s,
+    kc_7d=np.nan,
+    swc30d=np.nan,
+    settings=None,
+    switches=None,
+):
     """Return (n_class,) flux in nmol m-2 s-1.
 
     `pft_fraction` is upstream-style canopy composition, normalized internally.
@@ -623,69 +635,115 @@ def biogenic_emission_megan_v3(*, day, hour, latitude_deg, temperature_k,
     # The upstream GAMSM response uses kc_7d, not SWC30D; do not silently
     # substitute soil moisture for the crop coefficient.
     if not np.isfinite(swc30d) or not (0.0 <= swc30d <= 1.0):
-        raise ValueError('swc30d must be between 0 and 1 m3/m3')
+        raise ValueError("swc30d must be between 0 and 1 m3/m3")
     if switches is None:
         switches = _RUNTIME_SWITCHES
     if settings is None:
         settings = _RUNTIME_SETTINGS or MeganSettings()
-    if switches is not None and switches.get('soil_moisture_response', False) and not np.isfinite(kc_7d):
-        raise ValueError('Soil moisture response requires kc_7d in upstream implementation; swc30d alone is insufficient')
+    if (
+        switches is not None
+        and switches.get("soil_moisture_response", False)
+        and not np.isfinite(kc_7d)
+    ):
+        raise ValueError(
+            "Soil moisture response requires kc_7d in upstream implementation; swc30d alone is insufficient"
+        )
     if settings.n_class < 1 or settings.n_class > MEGVEA.N_ACTIVITY_CLASSES:
-        raise ValueError('n_class exceeds upstream activity-class tables')
+        raise ValueError("n_class exceeds upstream activity-class tables")
     if settings.NRTYP != MEGCAN.N_CANOPY_TYPES:
-        raise ValueError('NRTYP changes require a matching expanded MEGCAN canopy parameter table')
+        raise ValueError("NRTYP changes require a matching expanded MEGCAN canopy parameter table")
     if settings.NLayers < 1:
-        raise ValueError('NLayers must be positive')
+        raise ValueError("NLayers must be positive")
     if not np.isfinite(settings.solar_to_ppfd) or settings.solar_to_ppfd <= 0:
-        raise ValueError('solar_to_ppfd must be finite and positive')
+        raise ValueError("solar_to_ppfd must be finite and positive")
     if not np.isfinite(swdnb_w_m2) or swdnb_w_m2 < 0:
-        raise ValueError('swdnb_w_m2 must be finite and non-negative (W m-2)')
+        raise ValueError("swdnb_w_m2 must be finite and non-negative (W m-2)")
     if not np.isfinite(swdnb_24h_w_m2) or swdnb_24h_w_m2 < 0:
-        raise ValueError('swdnb_24h_w_m2 must be finite and non-negative (W m-2)')
+        raise ValueError("swdnb_24h_w_m2 must be finite and non-negative (W m-2)")
     fractions = np.asarray(pft_fraction, dtype=float)
     ef = np.asarray(emission_factor, dtype=float)
     ldf = np.asarray(light_dependent_fraction, dtype=float)
-    if fractions.shape != (settings.NRTYP,) or ef.shape != (settings.n_class,) or ldf.shape != (settings.n_class,):
-        raise ValueError('Input array shape does not match NRTYP/n_class')
+    if (
+        fractions.shape != (settings.NRTYP,)
+        or ef.shape != (settings.n_class,)
+        or ldf.shape != (settings.n_class,)
+    ):
+        raise ValueError("Input array shape does not match NRTYP/n_class")
     if not np.all(np.isfinite(fractions)) or np.any(fractions < 0) or fractions.sum() <= 0:
-        raise ValueError('Invalid canopy fractions')
-    if not np.all(np.isfinite(ef)) or np.any(ef < 0) or not np.all(np.isfinite(ldf)) or np.any((ldf < 0) | (ldf > 1)):
-        raise ValueError('Invalid EF or LDF')
+        raise ValueError("Invalid canopy fractions")
+    if (
+        not np.all(np.isfinite(ef))
+        or np.any(ef < 0)
+        or not np.all(np.isfinite(ldf))
+        or np.any((ldf < 0) | (ldf > 1))
+    ):
+        raise ValueError("Invalid EF or LDF")
     if not (0 <= relative_humidity_percent <= 100) or pressure_pa <= 0:
-        raise ValueError('Invalid RH or pressure')
+        raise ValueError("Invalid RH or pressure")
     if switches is None:
-        switches = dict(bidirectional_lai_response=False, air_quality_response=False,
-            high_temperature_response=False, low_temperature_response=False,
-            high_wind_response=False, soil_moisture_response=False,
-            co2_response=False)
-    if HUMIDITY_MODE != 'RH':
-        raise ValueError('Current adapter supports RH only')
-    controls = ControlParameters(**switches, humidity_mode=HUMIDITY_MODE,
-        latitude_deg=float(latitude_deg), wilting_point=WILTING_POINT)
-    options = ModelOptions(number_of_layers=settings.NLayers,
+        switches = dict(
+            bidirectional_lai_response=False,
+            air_quality_response=False,
+            high_temperature_response=False,
+            low_temperature_response=False,
+            high_wind_response=False,
+            soil_moisture_response=False,
+            co2_response=False,
+        )
+    if HUMIDITY_MODE != "RH":
+        raise ValueError("Current adapter supports RH only")
+    controls = ControlParameters(
+        **switches,
+        humidity_mode=HUMIDITY_MODE,
+        latitude_deg=float(latitude_deg),
+        wilting_point=WILTING_POINT,
+    )
+    options = ModelOptions(
+        number_of_layers=settings.NLayers,
         solar_constant_w_m2=settings.solar_constant_w_m2,
         solar_to_ppfd=settings.solar_to_ppfd,
-        air_quality_index=settings.air_quality_index, co2_ppm=settings.co2_ppm,
-        kc_min=settings.kc_min, kc_max=settings.kc_max)
-    species = SpeciesParameters(tuple(['Isoprene'] + [f'class_{i}' for i in range(1, settings.n_class)]), ef, ldf)
-    pfts = PFTParameters(tuple(f'canopy_{i}' for i in range(settings.NRTYP)), fractions * 100.0)
+        air_quality_index=settings.air_quality_index,
+        co2_ppm=settings.co2_ppm,
+        kc_min=settings.kc_min,
+        kc_max=settings.kc_max,
+    )
+    species = SpeciesParameters(
+        tuple(["Isoprene"] + [f"class_{i}" for i in range(1, settings.n_class)]), ef, ldf
+    )
+    pfts = PFTParameters(tuple(f"canopy_{i}" for i in range(settings.NRTYP)), fractions * 100.0)
     positions, weights = MEGCAN.canopy_layer_quadrature(
         settings.NLayers, settings.canopy_layer_method
     )
-    canopy_state = _calculate_canopy_state(day=float(day), hour=float(hour),
-        temperature_k=float(temperature_k), swdnb_w_m2=float(swdnb_w_m2), lai=float(lai),
-        wind_m_s=float(wind_m_s), humidity_input=float(relative_humidity_percent),
-        pressure_pa=float(pressure_pa), controls=controls, pfts=pfts,
-        options=options, layer_positions=positions)
-    flux = _calculate_record_emissions(current_lai=float(lai),
-        previous_lai=float(previous_lai), canopy_state=canopy_state,
+    canopy_state = _calculate_canopy_state(
+        day=float(day),
+        hour=float(hour),
+        temperature_k=float(temperature_k),
+        swdnb_w_m2=float(swdnb_w_m2),
+        lai=float(lai),
+        wind_m_s=float(wind_m_s),
+        humidity_input=float(relative_humidity_percent),
+        pressure_pa=float(pressure_pa),
+        controls=controls,
+        pfts=pfts,
+        options=options,
+        layer_positions=positions,
+    )
+    flux = _calculate_record_emissions(
+        current_lai=float(lai),
+        previous_lai=float(previous_lai),
+        canopy_state=canopy_state,
         daily_mean_ppfd=float(swdnb_24h_w_m2) * settings.solar_to_ppfd,
         daily_mean_temperature_k=float(t24_k),
         previous_10_day_temperature_k=float(t10d_k),
-        daily_max_temperature_k=float(tmax_k), daily_min_temperature_k=float(tmin_k),
-        daily_max_wind_m_s=float(windmax_m_s), kc_7d=float(kc_7d),
-        controls=controls, species=species, options=options,
-        layer_weights=weights)
+        daily_max_temperature_k=float(tmax_k),
+        daily_min_temperature_k=float(tmin_k),
+        daily_max_wind_m_s=float(windmax_m_s),
+        kc_7d=float(kc_7d),
+        controls=controls,
+        species=species,
+        options=options,
+        layer_weights=weights,
+    )
     return np.asarray(flux, dtype=float)
 
 
@@ -695,11 +753,17 @@ class MeganModel:
     Inputs to run() match biogenic_emission_megan_v3 keyword arguments except
     PFT/EF/LDF, which are prepared during initialization.
     """
+
     def __init__(self, config):
         from .src.config import MeganConfig
+        from .src.EFPreprocessor import (
+            assemble_ldf,
+            process_grid,
+            validate_growthform_count,
+            write_grid_ef,
+        )
         from .src.MGN2MECH import MGN2MECH
-        from .src.EFPreprocessor import (process_grid, write_grid_ef,
-                                         validate_growthform_count, assemble_ldf)
+
         if not isinstance(config, MeganConfig):
             raise TypeError("config must be a MeganConfig")
         self.config = config
@@ -708,40 +772,53 @@ class MeganModel:
         files = config.inputs
         configure_runtime(config.data, config.root)
         self.mapper = MGN2MECH(mapping_files=config.mapping_files)
-        self.mapper.validate_dimensions(n_class=dims['n_class'], n_species=dims['n_species'])
+        self.mapper.validate_dimensions(n_class=dims["n_class"], n_species=dims["n_species"])
         MEGVEA.validate_activity_classes(self.mapper.class_names)
         raw_files = config.raw_ef_files
-        validate_growthform_count(raw_files, dims['NGFORM'])
+        validate_growthform_count(raw_files, dims["NGFORM"])
         self.pft_fraction = load_pft_parameters(
-            config.path(files['pft_fractions_file'])).fractions_percent
+            config.path(files["pft_fractions_file"])
+        ).fractions_percent
         grid_ids, _ = MEGVEA.get_ldf_configuration(self.mapper.class_names)
-        grid = process_grid(config.path(files['growthform_file']),
-                            n_classes=dims['n_class'], raw_ef_files=raw_files,
-                            ldf_classes=grid_ids)
+        grid = process_grid(
+            config.path(files["growthform_file"]),
+            n_classes=dims["n_class"],
+            raw_ef_files=raw_files,
+            ldf_classes=grid_ids,
+        )
         self.emission_factor = np.asarray(grid.ef, dtype=float)
         self.light_dependent_fraction = assemble_ldf(self.mapper.class_names, MEGVEA, grid)
         self.class_names = tuple(self.mapper.class_names)
-        write_grid_ef(config.path(config.intermediate_outputs['ef_ldf_output']), grid,
-                      class_names=self.class_names,
-                      ldf=self.light_dependent_fraction)
+        write_grid_ef(
+            config.path(config.intermediate_outputs["ef_ldf_output"]),
+            grid,
+            class_names=self.class_names,
+            ldf=self.light_dependent_fraction,
+        )
 
     @classmethod
     def from_yaml(cls, filename):
         from .src.config import MeganConfig
+
         return cls(MeganConfig.from_yaml(filename))
 
     def run(self, **meteorology):
-        forbidden = {'pft_fraction', 'emission_factor', 'light_dependent_fraction',
-                     'settings', 'switches'} & meteorology.keys()
+        forbidden = {
+            "pft_fraction",
+            "emission_factor",
+            "light_dependent_fraction",
+            "settings",
+            "switches",
+        } & meteorology.keys()
         if forbidden:
             raise ValueError(f"Inputs managed by MeganModel: {sorted(forbidden)}")
         return biogenic_emission_megan_v3(
             pft_fraction=self.pft_fraction,
             emission_factor=self.emission_factor,
             light_dependent_fraction=self.light_dependent_fraction,
-            **meteorology)
+            **meteorology,
+        )
 
     def to_mechanism(self, class_flux, mechanism=None, return_species=False):
         selected = self.mechanism if mechanism is None else mechanism
-        return self.mapper.convert(class_flux, selected,
-                                   return_species=return_species)
+        return self.mapper.convert(class_flux, selected, return_species=return_species)

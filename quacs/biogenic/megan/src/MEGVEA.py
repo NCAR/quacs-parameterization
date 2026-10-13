@@ -13,34 +13,52 @@ The public function names from the original code (for example ``gamma_a`` and
 
 from __future__ import annotations
 
-import numpy as np
+import csv
 
 # The original coefficient tables contain 20 activity classes.  The supplied
 # example emission-factor file uses the first 19 classes.
 from pathlib import Path
-import csv
+
+import numpy as np
+
 
 def load_activity_parameters(path=None):
     """Load per-class response coefficients, ordered as CSV rows."""
-    path = Path(path) if path is not None else Path(__file__).resolve().parent.parent / 'inputs' / 'activity_class_parameters.csv'
-    with path.open(newline='', encoding='utf-8-sig') as f:
+    path = (
+        Path(path)
+        if path is not None
+        else Path(__file__).resolve().parent.parent / "inputs" / "activity_class_parameters.csv"
+    )
+    with path.open(newline="", encoding="utf-8-sig") as f:
         rows = list(csv.DictReader(f))
-    names = tuple(row['class_name'] for row in rows)
+    names = tuple(row["class_name"] for row in rows)
     if not names or len(set(names)) != len(names):
-        raise ValueError('Activity class names must be nonempty and unique')
-    cols = ['a_new', 'a_growing', 'a_mature', 'a_old', 'air_quality_coefficient', 'high_temperature_coefficient', 'low_temperature_coefficient', 'high_wind_coefficient', 'cleo', 'ct1', 'beta']
+        raise ValueError("Activity class names must be nonempty and unique")
+    cols = [
+        "a_new",
+        "a_growing",
+        "a_mature",
+        "a_old",
+        "air_quality_coefficient",
+        "high_temperature_coefficient",
+        "low_temperature_coefficient",
+        "high_wind_coefficient",
+        "cleo",
+        "ct1",
+        "beta",
+    ]
     result = {}
     for key in cols:
         try:
             result[key] = np.array([float(row[key]) for row in rows])
         except (KeyError, TypeError, ValueError) as exc:
-            raise ValueError(f'Invalid activity parameter: {key}') from exc
+            raise ValueError(f"Invalid activity parameter: {key}") from exc
         if not np.isfinite(result[key]).all():
-            raise ValueError(f'Nonfinite activity parameter: {key}')
+            raise ValueError(f"Nonfinite activity parameter: {key}")
     ldf = []
     for row in rows:
-        value = row.get('ldf', '')
-        if value.strip().upper() == 'GRID':
+        value = row.get("ldf", "")
+        if value.strip().upper() == "GRID":
             ldf.append(np.nan)
         else:
             try:
@@ -50,42 +68,56 @@ def load_activity_parameters(path=None):
             if not np.isfinite(number) or not 0 <= number <= 1:
                 raise ValueError(f"LDF for {row['class_name']} must be GRID or in [0,1]")
             ldf.append(number)
-    result['ldf'] = np.asarray(ldf, dtype=float)
+    result["ldf"] = np.asarray(ldf, dtype=float)
     return names, result
+
 
 ACTIVITY_CLASS_NAMES, _PARAMETERS = load_activity_parameters()
 N_ACTIVITY_CLASSES = len(ACTIVITY_CLASS_NAMES)
-_ACTIVITY_LDF = _PARAMETERS['ldf']
-_A_NEW = _PARAMETERS['a_new']
-_A_GROWING = _PARAMETERS['a_growing']
-_A_MATURE = _PARAMETERS['a_mature']
-_A_OLD = _PARAMETERS['a_old']
-_AIR_QUALITY_COEFFICIENT = _PARAMETERS['air_quality_coefficient']
-_HIGH_TEMPERATURE_COEFFICIENT = _PARAMETERS['high_temperature_coefficient']
-_LOW_TEMPERATURE_COEFFICIENT = _PARAMETERS['low_temperature_coefficient']
-_HIGH_WIND_COEFFICIENT = _PARAMETERS['high_wind_coefficient']
-_CLEO = _PARAMETERS['cleo']
-_CT1 = _PARAMETERS['ct1']
-_BETA = _PARAMETERS['beta']
+_ACTIVITY_LDF = _PARAMETERS["ldf"]
+_A_NEW = _PARAMETERS["a_new"]
+_A_GROWING = _PARAMETERS["a_growing"]
+_A_MATURE = _PARAMETERS["a_mature"]
+_A_OLD = _PARAMETERS["a_old"]
+_AIR_QUALITY_COEFFICIENT = _PARAMETERS["air_quality_coefficient"]
+_HIGH_TEMPERATURE_COEFFICIENT = _PARAMETERS["high_temperature_coefficient"]
+_LOW_TEMPERATURE_COEFFICIENT = _PARAMETERS["low_temperature_coefficient"]
+_HIGH_WIND_COEFFICIENT = _PARAMETERS["high_wind_coefficient"]
+_CLEO = _PARAMETERS["cleo"]
+_CT1 = _PARAMETERS["ct1"]
+_BETA = _PARAMETERS["beta"]
+
 
 def configure_activity(path):
     """Update activity coefficients for this process before model evaluation."""
     global ACTIVITY_CLASS_NAMES, N_ACTIVITY_CLASSES, _ACTIVITY_LDF
-    global _A_NEW, _A_GROWING, _A_MATURE, _A_OLD, _AIR_QUALITY_COEFFICIENT, _HIGH_TEMPERATURE_COEFFICIENT, _LOW_TEMPERATURE_COEFFICIENT, _HIGH_WIND_COEFFICIENT, _CLEO, _CT1, _BETA
+    global \
+        _A_NEW, \
+        _A_GROWING, \
+        _A_MATURE, \
+        _A_OLD, \
+        _AIR_QUALITY_COEFFICIENT, \
+        _HIGH_TEMPERATURE_COEFFICIENT, \
+        _LOW_TEMPERATURE_COEFFICIENT, \
+        _HIGH_WIND_COEFFICIENT, \
+        _CLEO, \
+        _CT1, \
+        _BETA
     ACTIVITY_CLASS_NAMES, parameters = load_activity_parameters(path)
     N_ACTIVITY_CLASSES = len(ACTIVITY_CLASS_NAMES)
-    _ACTIVITY_LDF = parameters['ldf']
-    _A_NEW = parameters['a_new']
-    _A_GROWING = parameters['a_growing']
-    _A_MATURE = parameters['a_mature']
-    _A_OLD = parameters['a_old']
-    _AIR_QUALITY_COEFFICIENT = parameters['air_quality_coefficient']
-    _HIGH_TEMPERATURE_COEFFICIENT = parameters['high_temperature_coefficient']
-    _LOW_TEMPERATURE_COEFFICIENT = parameters['low_temperature_coefficient']
-    _HIGH_WIND_COEFFICIENT = parameters['high_wind_coefficient']
-    _CLEO = parameters['cleo']
-    _CT1 = parameters['ct1']
-    _BETA = parameters['beta']
+    _ACTIVITY_LDF = parameters["ldf"]
+    _A_NEW = parameters["a_new"]
+    _A_GROWING = parameters["a_growing"]
+    _A_MATURE = parameters["a_mature"]
+    _A_OLD = parameters["a_old"]
+    _AIR_QUALITY_COEFFICIENT = parameters["air_quality_coefficient"]
+    _HIGH_TEMPERATURE_COEFFICIENT = parameters["high_temperature_coefficient"]
+    _LOW_TEMPERATURE_COEFFICIENT = parameters["low_temperature_coefficient"]
+    _HIGH_WIND_COEFFICIENT = parameters["high_wind_coefficient"]
+    _CLEO = parameters["cleo"]
+    _CT1 = parameters["ct1"]
+    _BETA = parameters["beta"]
+
 
 def _validate_species_index(species_index: int) -> None:
     """Raise a clear error when a species/activity-class index is invalid."""
@@ -128,31 +160,22 @@ def gamma_a(previous_lai: float, current_lai: float, daily_temperature_k: float)
         return np.ones(N_ACTIVITY_CLASSES, dtype=float)
 
     if lai_previous < lai_current:
-        leaf_expansion_days = (
-            5.0 + 0.7 * (300.0 - temperature)
-            if temperature <= 303.0
-            else 2.9
-        )
+        leaf_expansion_days = 5.0 + 0.7 * (300.0 - temperature) if temperature <= 303.0 else 2.9
         maturation_days = 2.3 * leaf_expansion_days
 
         if leaf_expansion_days >= update_interval_days:
             fraction_new = 1.0 - lai_previous / lai_current
         else:
             fraction_new = (
-                leaf_expansion_days
-                / update_interval_days
-                * (1.0 - lai_previous / lai_current)
+                leaf_expansion_days / update_interval_days * (1.0 - lai_previous / lai_current)
             )
 
         if maturation_days >= update_interval_days:
             fraction_mature = lai_previous / lai_current
         else:
-            fraction_mature = (
-                lai_previous / lai_current
-                + (update_interval_days - maturation_days)
-                / update_interval_days
-                * (1.0 - lai_previous / lai_current)
-            )
+            fraction_mature = lai_previous / lai_current + (
+                update_interval_days - maturation_days
+            ) / update_interval_days * (1.0 - lai_previous / lai_current)
 
         fraction_growing = 1.0 - fraction_new - fraction_mature
         fraction_old = 0.0
@@ -225,17 +248,13 @@ def _piecewise_stress(
         if value <= threshold:
             return 1.0
         if value < threshold + transition_width:
-            return 1.0 + (coefficient - 1.0) * (
-                value - threshold
-            ) / transition_width
+            return 1.0 + (coefficient - 1.0) * (value - threshold) / transition_width
         return coefficient
 
     if value >= threshold:
         return 1.0
     if value > threshold - transition_width:
-        return 1.0 + (coefficient - 1.0) * (
-            threshold - value
-        ) / transition_width
+        return 1.0 + (coefficient - 1.0) * (threshold - value) / transition_width
     return coefficient
 
 
@@ -302,9 +321,9 @@ def gamma_co2(co2_ppm: float) -> float:
         return 1.0
 
     internal_co2 = 0.7 * co2_ppm
-    return isoprene_maximum - (
-        isoprene_maximum * internal_co2**co2_exponent
-    ) / (c_star**co2_exponent + internal_co2**co2_exponent)
+    return isoprene_maximum - (isoprene_maximum * internal_co2**co2_exponent) / (
+        c_star**co2_exponent + internal_co2**co2_exponent
+    )
 
 
 def gamtld(
@@ -331,11 +350,7 @@ def gamtld(
         optimum_emission
         * ct2
         * np.exp(_CT1[species_index] * x_value)
-        / (
-            ct2
-            - _CT1[species_index]
-            * (1.0 - np.exp(ct2 * x_value))
-        )
+        / (ct2 - _CT1[species_index] * (1.0 - np.exp(ct2 * x_value)))
     )
 
 
@@ -347,12 +362,7 @@ def gamp(leaf_ppfd: float, daily_mean_ppfd: float) -> float:
 
     c1 = 1.03
     alpha = 0.004
-    return float(
-        alpha
-        * c1
-        * leaf_ppfd
-        / np.sqrt(1.0 + alpha**2 * leaf_ppfd**2)
-    )
+    return float(alpha * c1 * leaf_ppfd / np.sqrt(1.0 + alpha**2 * leaf_ppfd**2))
 
 
 def gamtli(leaf_temperature_k: float, species_index: int) -> float:
@@ -360,21 +370,13 @@ def gamtli(leaf_temperature_k: float, species_index: int) -> float:
 
     _validate_species_index(species_index)
     standard_temperature_k = 303.15
-    return float(
-        np.exp(
-            _BETA[species_index]
-            * (leaf_temperature_k - standard_temperature_k)
-        )
-    )
+    return float(np.exp(_BETA[species_index] * (leaf_temperature_k - standard_temperature_k)))
 
 
 def ResRC(ppfd: float) -> float:
     """Legacy helper for the HCHO resistance parameterization."""
 
-    return float(
-        (0.0027 * 1.066 * ppfd)
-        / np.sqrt(1.0 + 0.0027 * 0.0027 * ppfd**2)
-    )
+    return float((0.0027 * 1.066 * ppfd) / np.sqrt(1.0 + 0.0027 * 0.0027 * ppfd**2))
 
 
 def HCHOLeafRes(stomatal_conductance: float) -> float:
@@ -431,8 +433,7 @@ def gamma_sm_kc(kc: float, kc_max: float, kc_min: float) -> float:
         maximum_factor
         * (1.0 / (1.0 + b1 * np.exp(k1 * (normalized_kc - 0.2))))
         * (
-            (1.0 - 1.0 / maximum_factor)
-            / (1.0 + b2 * np.exp(k2 * (1.3 - normalized_kc)))
+            (1.0 - 1.0 / maximum_factor) / (1.0 + b2 * np.exp(k2 * (1.3 - normalized_kc)))
             + 1.0 / maximum_factor
         )
     )
@@ -443,12 +444,13 @@ def get_ldf_configuration(class_names):
     lookup = {name: i for i, name in enumerate(ACTIVITY_CLASS_NAMES)}
     missing = set(class_names) - set(lookup)
     if missing:
-        raise ValueError(f'Activity coefficients missing emission classes: {sorted(missing)}')
+        raise ValueError(f"Activity coefficients missing emission classes: {sorted(missing)}")
     selected = np.asarray([_ACTIVITY_LDF[lookup[name]] for name in class_names])
     return tuple(i + 1 for i, v in enumerate(selected) if np.isnan(v)), selected.copy()
 
+
 def validate_activity_classes(class_names):
     if len(class_names) > N_ACTIVITY_CLASSES:
-        raise ValueError('Not enough activity-class coefficient rows')
-    if tuple(class_names) != ACTIVITY_CLASS_NAMES[:len(class_names)]:
-        raise ValueError('Activity class order differs from mapping class order')
+        raise ValueError("Not enough activity-class coefficient rows")
+    if tuple(class_names) != ACTIVITY_CLASS_NAMES[: len(class_names)]:
+        raise ValueError("Activity class order differs from mapping class order")

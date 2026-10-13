@@ -3,7 +3,7 @@
 
 No meteorology CSV or plots; EF/LDF output is configured in YAML.
 EF/LDF are derived from plant/ecotype/growth-form tables at runtime.
-Run with the MEGAN3_in_python repository's ``src`` package importable.
+Run from any folder after ``pip install -e .``.
 
 All meteorological numbers below are illustrative, NOT measured site data.
 Historical quantities must be supplied by the host model or prepared from
@@ -13,8 +13,8 @@ from pathlib import Path
 from contextlib import redirect_stdout
 import sys
 import numpy as np
-from ..biogenic_emission_megan_v3 import MeganModel
-from ..src.config import MeganConfig
+from quacs.biogenic.megan.biogenic_emission_megan_v3 import MeganModel
+from quacs.biogenic.megan.src.config import MeganConfig
 
 MEGAN_DIR = Path(__file__).resolve().parent.parent
 

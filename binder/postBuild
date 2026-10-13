@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+# Install quacs (and musica, numpy, xarray, etc. from pyproject.toml) from this repository
+pip install "${REPO_DIR:-.}"

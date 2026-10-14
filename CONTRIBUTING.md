@@ -18,12 +18,14 @@ quacs/
         ├── <scheme>.py        # the physics, as functions with no side effects
         ├── data/              # small data files that the scheme needs (optional)
         ├── examples/
-        │   ├── musica_box_model.py   # runs the scheme with MUSICA
-        │   └── <scheme>.ipynb        # plots and input configuration (optional)
+        │   └── musica_box_model.py   # runs the scheme with MUSICA
         └── tests/
             ├── __init__.py
             └── test_<scheme>.py      # unit tests (optional, but welcome)
 ```
+
+Notebooks go in the top-level `examples/` folder, in the same `<process>/<scheme>/` path:
+`examples/<process>/<scheme>/<scheme>.ipynb`. They plot results and configure inputs (optional).
 
 Use lowercase names with underscores for the folders. Name the scheme folder after the
 scheme or its first author, for example `ginoux` or `lnox_decaria`.
@@ -34,7 +36,7 @@ scheme or its first author, for example `ginoux` or `lnox_decaria`.
 2. If a placeholder folder exists for your scheme, use it. If not, make a new scheme folder.
 3. Copy `templates/scheme/README.md` to the scheme folder and fill in every section.
 4. Put the physics in `.py` modules. Put plots and input configuration in notebooks.
-5. Add at least one example script or notebook in `examples/`.
+5. Add at least one example script in the scheme's `examples/` folder or notebook in `examples/<process>/<scheme>/`.
 6. Add the scheme to the table in the process `README.md`. Set the status.
 7. Add new dependencies to `pyproject.toml`.
 8. Run the checks below.

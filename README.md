@@ -8,7 +8,7 @@ The parameterizations here guide the design of that capability.
 
 Each parameterization has a README that tells its inputs, its outputs, and where each one comes from or goes to.
 Most parameterizations also run in a MUSICA box model.
-The Binder badge above launches JupyterLab in the browser, where you can run any notebook in the `examples/` folders without installing anything.
+The Binder badge above launches JupyterLab in the browser, where you can run any notebook in the top-level `examples/` folder without installing anything.
 
 ## Layout
 
@@ -22,8 +22,10 @@ quacs/
     └── <scheme>/
         ├── README.md      # status, inputs, outputs, references
         ├── <scheme>.py    # the physics
-        ├── examples/      # MUSICA box model scripts and notebooks
+        ├── examples/      # MUSICA box model scripts
         └── tests/
+examples/
+└── <process>/<scheme>/    # notebooks that run the scheme
 ```
 
 ## Target parameterizations

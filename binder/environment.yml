@@ -2,7 +2,6 @@ name: quacs-env
 channels:
   - conda-forge
 dependencies:
-  - python>=3.11
-  - pip
-  - jupyterlab
+  - python>=3.10
   - ipykernel
+  - pip

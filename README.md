@@ -1,6 +1,6 @@
 # quacs-parameterization
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/NCAR/quacs-parameterization/24-add-binder-runner?urlpath=lab/tree/examples)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/NCAR/quacs-parameterization/HEAD?urlpath=lab/tree/examples)
 
 This repository collects the target parameterizations for the QUACS project.
 QUACS adds a scripting capability for chemistry and aerosol parameterizations to MUSICA and MPAS-A.

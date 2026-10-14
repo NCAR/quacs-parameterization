@@ -31,6 +31,11 @@ A placeholder folder has only a README with the content of the target list.
 | Target class | Process folder | Scheme | Status |
 |---|---|---|---|
 | Dust emission | [`dust`](quacs/dust/) | [GOCART (Ginoux et al., 2001)](quacs/dust/ginoux/) | implemented |
+| Dust emission | [`dust`](quacs/dust/) | [AFWA (WRF-Chem)](quacs/dust/afwa/) | implemented |
+| Dust emission | [`dust`](quacs/dust/) | [Shao (2011), WRF-Chem](quacs/dust/shao2011/) | implemented |
+| Dust emission | [`dust`](quacs/dust/) | [FENGSHA, CMAQ (Lu and Shao, 1999)](quacs/dust/fengsha_ls99/) | implemented |
+| Dust emission | [`dust`](quacs/dust/) | [FENGSHA, RRFS-SD](quacs/dust/fengsha_rrfs/) | implemented |
+| Dust emission | [`dust`](quacs/dust/) | [Leung et al. (2023), Zenodo code](quacs/dust/leung2023/) | implemented |
 | Dust emission | [`dust`](quacs/dust/) | [LS99-FENGSHA](quacs/dust/fengsha/) | placeholder |
 | Dust emission | [`dust`](quacs/dust/) | [Kok et al. (2014)](quacs/dust/kok/) | implemented |
 | Dust emission | [`dust`](quacs/dust/) | [DEAD (Zender et al., 2003)](quacs/dust/zender/) | implemented |

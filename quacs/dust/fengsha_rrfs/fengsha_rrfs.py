@@ -1,0 +1,768 @@
+"""
+Dust Emission Scheme: FENGSHA (RRFS-SD / CCPP variant), Webb et al. (2020)
+==========================================================================
+Target Parameterization for QUACS / CheMPAS-A
+
+This is the NOAA/ARL FENGSHA dust emission scheme as implemented in the
+RRFS-SD (Rapid Refresh Forecast System - Smoke and Dust) CCPP physics.
+It is a DIFFERENT scheme from the CMAQ/LS99 FENGSHA in dust_fengsha_ls99_new.py:
+the horizontal saltation flux here follows Webb et al. (2020) Eq. 9, not
+Lu & Shao (1999). Keep the two scripts distinct and label them by lineage.
+
+References:
+    Webb et al. (2020), Eq. 9 (horizontal flux), as cited in
+    sources/physics__smoke_dust__dust_fengsha_mod.F90:483. The code gives no title.
+
+    Marticorena, B. and Bergametti, G. (1995). Modeling the atmospheric
+    dust cycle: 1. J. Geophys. Res., 100, 16415-16430.
+    (vertical-to-horizontal flux ratio, MB95).
+
+    Fecan, F., et al. (1999). Parametrization of the increase of the
+    aeolian erosion threshold wind friction velocity due to soil moisture.
+    Ann. Geophys., 17, 149-157. (moisture correction, option 1).
+
+    Kok, J. F. (2011). A scaling theory for the size distribution of
+    emitted dust aerosols. PNAS. (bin partition, lognormal).
+
+    MacKinnon, D. J., et al. (2004). doi:10.1016/j.geomorph.2004.03.009
+    (drag partition correction).
+
+    Fortran reference: ufs-community/ccpp-physics
+      physics/smoke_dust/dust_fengsha_mod.F90
+        gocart_dust_fengsha_driver     (L23-L210)   grid driver + masks
+        source_dust                    (L213-L372)  Kok bin split, constants
+        DustEmissionFENGSHA            (L398-L492)  core flux
+        soilMoistureConvertVol2Grav    (L494-L527)
+        moistureCorrectionFecan        (L529-L563)
+        moistureCorrectionShao         (L565-L594)
+        DustFluxV2HRatioMB95           (L596-L626)
+      physics/smoke_dust/dust_data_mod.F90
+        bin radii / densities / fractions, dust_uthres table, defaults
+    Module author: Barry Baker (NOAA ARL); FV3/CCPP adaptation: Haiqin Li.
+
+QUACS Contract
+--------------
+Standalone Python module. No MPAS-A, no config files, no dependencies
+beyond NumPy/SciPy-free code (erf from math). Runs as a script
+(python dust_fengsha_rrfs.py) or as pytest (pytest dust_fengsha_rrfs.py -v).
+
+Verification: the compiled pinned Fortran runs as both a 4-byte and an 8-byte
+build. The 4-byte build keeps expected rounding differences. The 8-byte build
+matches the Python code.
+
+Pre-API note:
+    Once the QUACS scripting API is finalized, the expected signature is:
+        @scheme(category='dust_emission')
+        def dust_emission_fengsha_rrfs(state: ModelState, config: Config) -> SurfaceFlux:
+    Until then, plain NumPy arrays are used.
+
+Physics summary (DustEmissionFENGSHA, L398-L492):
+    Total vertical flux [kg m^-2 s^-1]:
+
+        F = (alpha / g) * ssm^gamma * rho_a * kvh * q
+
+    kvh: vertical-to-horizontal mass flux ratio (MB95, L596-L626)
+        kvh = kvhmax                  if clay > 0.2
+              10^(13.4*clay - 6.0)    otherwise
+
+    q: horizontal saltation flux (Webb et al. 2020, Eq. 9, F:485)
+        rustar   = rdrag * ustar
+        u_thresh = uthrs * h
+        u_sum    = rustar + u_thresh
+        q        = max(0, rustar - u_thresh) * u_sum^2
+
+    h: soil-moisture threshold correction
+        opt 1 (Fecan, default): convert volumetric->gravimetric (L494-L527),
+            drylimit = dry_factor * clay * (14*clay + 17)
+            h = sqrt(1 + 1.21 * max(0, grav_soil - drylimit)^0.68)
+        opt 2 (Shao):
+            h = exp(22.7*slc)            if slc < 0.03
+                exp(95.3*slc - 2.029)    otherwise
+
+    The total F is then split into 5 size bins with the Kok lognormal
+    (source_dust, L341-L353); the bin fractions are fixed constants
+    (KOK_FRAC) computed once from the bin radii.
+
+    Density note (source-verification catch): DustEmissionFENGSHA takes a
+    `rhop` argument, passed RHOSOIL = 2650 kg/m^3 from source_dust (F:317),
+    but `rhop` is a DEAD ARGUMENT: declared intent(in), never referenced in
+    the subroutine body (L398-L492). It does NOT enter the flux. The only
+    live soil density is RHO_DRY = 1700 kg/m^3, used inside the Fecan
+    vol->grav conversion (F:515), with RHOW = 1000 kg/m^3 (F:514).
+    Both constants are kept for source fidelity,
+    but only RHO_DRY affects output. (Same dead-variable class as AFWA `znt`
+    and Shao `cst_slt`.)
+
+The driver also applies the RRFS tracer remap (F:369-370) and reports the
+sum of diagnostic bins 1-4 (W:617-618).
+
+The wrapper-level entry ``rrfs_dust_step`` ports the host tracer steps. RRFS
+keeps only two dust tracers between steps: dust (``ntdust``) and coarse PM
+(``ntcoarsepm``). Before the step, W:796 sets all ``chem`` to 0, then W:1066-1067
+sets ``chem(p_dust_1) = max(epsilc, gq0(ntdust))`` and
+``chem(p_coarse_pm) = max(epsilc, gq0(ntcoarsepm))``. Dust bin 5 is the
+coarse-PM slot (rrfs_smoke_config.F90:69, p_dust_5 = p_coarse_pm = 14), so bins
+2-4 start at 0. After the step, W:589-590 return
+``gq0(ntdust) = min(200, max(epsilc, chem(p_dust_1)))`` and
+``gq0(ntcoarsepm) = min(5000, max(epsilc, chem(p_coarse_pm)))``. W:595-601 only
+copy these two values to ``qgrs`` and ``chem3d``, so they add no new step.
+epsilc is 1e-12 (rrfs_smoke_config.F90:17). The code treats tracers as ug/kg
+(the driver scales by 1e-9 at F:363-370); the ``.meta`` file lists ``gq0`` as
+kg kg-1, which does not match the code.
+
+Inputs (per call):
+    ustar : np.ndarray [x, y]   friction velocity [m/s]
+    slc   : np.ndarray [x, y]   volumetric soil moisture, layer 2 [-] (F:182)
+    p, temperature : np.ndarray [x, y]  layer-1 pressure [Pa] and temperature [K]
+    p8w1, p8w2, area : np.ndarray [x, y]  layer pressure edges [Pa], cell area [m2]
+    dust : np.ndarray [x, y, 5]  initial RRFS tracers [ug/kg] (fengsha_rrfs_driver);
+           rrfs_dust_step takes two tracers instead: dust and coarse_pm [x, y]
+    stemp : np.ndarray [x, y]   layer-1 soil temperature [K]
+    znt, snowh, xland : np.ndarray [x, y]  roughness [m], snow [m], land type
+    clay   : np.ndarray [x, y]   clay mass fraction [-]
+    sand   : np.ndarray [x, y]   sand mass fraction [-]
+    ssm    : np.ndarray [x, y]   sediment supply / erosion map [-]
+    rdrag  : np.ndarray [x, y]   precomputed drag partition R [-]; skip <= 0 (F:174)
+    uthrs  : np.ndarray [x, y]   dry threshold friction velocity [m/s]
+    isltyp : np.ndarray [x, y]   integer soil type (F:156-162 mask)
+
+Configurable:
+    alpha       : float   scaling factor       (dust_alpha = 10.0, RRFS input.nml)
+    gamma       : float   ssm exponent         (dust_gamma = 1.3, RRFS input.nml)
+    kvhmax      : float   max flux ratio       (kvhmax = 2.0e-4)
+    moist_opt   : int     1=Fecan, 2=Shao      (dust_moist_opt = 1)
+    dry_factor  : float   Fecan dry limit gain (dust_drylimit_factor = 0.5, RRFS input.nml)
+    moist_corr  : float   slc pre-multiplier   (dust_moist_correction = 2.0, RRFS input.nml)
+Output: rate [kg m-2 s-1], bems [ug m-2 s-1], updated dust [ug/kg],
+and emis_dust [ug m-2 s-1]. The tracer increment uses
+rate * area * dt / (-(p8w2-p8w1) * area / GRAV) (F:116,363).
+"""
+
+from __future__ import annotations
+
+import math
+import warnings
+from dataclasses import dataclass, field, fields
+from typing import NamedTuple
+
+import numpy as np
+
+# ---------------------------------------------------------------------------
+# Physical constants
+# ---------------------------------------------------------------------------
+GRAV = 9.80665  # physcons.F90:55, con_g [m/s^2]
+CON_RD = 287.05  # physcons.F90:67, con_rd [J/kg/K]
+
+
+class FengshaRRFSWarning(UserWarning):
+    """Unusual values passed through the pinned Fortran calculation."""
+
+
+# ---------------------------------------------------------------------------
+# Bin parameters  -  source: dust_data_mod.F90, L23-L27
+# ---------------------------------------------------------------------------
+N_BINS = 5
+REFF_DUST = np.array([0.73, 1.4, 2.4, 4.5, 8.0]) * 1.0e-6  # L24 [m]
+LO_DUST = np.array([0.1, 1.0, 1.8, 3.0, 6.0]) * 1.0e-6  # L26 [m]
+UP_DUST = np.array([1.0, 1.8, 3.0, 6.0, 10.0]) * 1.0e-6  # L27 [m]
+DEN_DUST = np.array([2500.0, 2650.0, 2650.0, 2650.0, 2650.0])  # L23 [kg/m^3]
+
+# ---------------------------------------------------------------------------
+# Core scheme constants  -  source: source_dust, dust_fengsha_mod.F90 L306-L317
+# ---------------------------------------------------------------------------
+KVHMAX_DEFAULT = 2.0e-4  # L307  max vertical-to-horizontal flux ratio [-]
+RHOSOIL = 2650.0  # F:317  saltation soil density [kg/m^3]
+
+# Kok (2011) lognormal distribution parameters - source_dust, L313-L316
+MMD_DUST = 3.4e-6  # L313  median mass diameter [m]
+GSD_DUST = 3.0  # L314  geometric standard deviation [-]
+LAMBDA = 12.0e-6  # L315  crack propagation length [m]
+CV = 12.62e-6  # L316  normalization constant [m]
+
+# ---------------------------------------------------------------------------
+# Defaults  -  source: dust_data_mod.F90, L71-L74
+# ---------------------------------------------------------------------------
+# Real RRFS forecast namelist: rrfs-workflow d228600, parm/config/det/input.nml:190-194
+# (dust_opt = 1). The wrapper overwrites the dust_data_mod values at init (W:78-82).
+ALPHA_DEFAULT = 10.0  # input.nml:190  dust_alpha
+GAMMA_DEFAULT = 1.3  # input.nml:192  dust_gamma
+MOIST_CORR_DEFAULT = 2.0  # input.nml:193  dust_moist_correction
+DRY_FACTOR_DEFAULT = 0.5  # input.nml:191  dust_drylimit_factor
+MOIST_OPT_DEFAULT = 1  # L69  dust_moist_opt (1=Fecan, 2=Shao)
+
+# Fecan vol->grav conversion densities - soilMoistureConvertVol2Grav, F:514-515
+RHOW = 1000.0  # F:514  density of water [kg/m^3]
+RHO_DRY = 1700.0  # F:515  density of dry soil [kg/m^3] (NOT RHOSOIL)
+
+# ---------------------------------------------------------------------------
+# Dry threshold friction velocity table  -  dust_data_mod.F90, L51-L66
+# 13 entries: 12 USDA texture classes + "other" (index 13 = nonerodible).
+#
+# In RRFS-SD, W:822 supplies uthr from a monthly input. No pinned Fortran
+# reads this table. threshold_from_soiltype() is a 1-based USDA convenience;
+# its mapping to the host soil categories is not established by the pin.
+# ---------------------------------------------------------------------------
+UTHRES_TABLE = np.array(
+    [
+        0.065,  # 1  Sand
+        0.18,  # 2  Loamy Sand
+        0.27,  # 3  Sandy Loam
+        0.30,  # 4  Silt Loam
+        0.35,  # 5  Silt
+        0.38,  # 6  Loam
+        0.35,  # 7  Sandy Clay Loam
+        0.41,  # 8  Silty Clay Loam
+        0.41,  # 9  Clay Loam
+        0.45,  # 10 Sandy Clay
+        0.50,  # 11 Silty Clay
+        0.45,  # 12 Clay
+        9999.0,  # 13 Other (nonerodible sentinel)
+    ]
+)
+
+# Nonerodible soil types - driver masks, dust_fengsha_mod.F90 F:156-162.
+# isltyp in {0, 15, 16, 18} is skipped (bedrock/land-ice/water-ish).
+NONERODIBLE_SOILTYPES = (0, 15, 16, 18)
+
+# Frozen-soil cutoff - driver, L150. stemp < 268 K (-5 C) suppresses lofting.
+FROZEN_TEMP_K = 268.0
+
+SAT_BASE, SAT_SAND = 0.489, 0.126
+FECAN_CLAY_A, FECAN_CLAY_B = 14.0, 17.0
+FECAN_SCALE, FECAN_POWER = 1.21, 0.68
+SHAO_CUTOFF, SHAO_LOW, SHAO_HIGH, SHAO_OFFSET = 0.03, 22.7, 95.3, 2.029
+RATIO_CUTOFF, RATIO_CLAY, RATIO_OFFSET = 0.2, 13.4, 6.0
+ZNT_MAX, SNOW_MAX = 0.2, 0.0
+REMAP_FINE, REMAP_COARSE = 0.286, 0.714
+EPSILC = 1.0e-12  # rrfs_smoke_config.F90:17  tracer floor [ug/kg]
+DUST_CAP, COARSE_PM_CAP = 200.0, 5000.0  # W:589, W:590 [ug/kg]
+
+
+@dataclass(frozen=True)
+class RrfsSettings:
+    reff_dust: tuple = field(
+        default_factory=lambda: tuple(REFF_DUST),
+        metadata={"source": "dust_data_mod.F90:24", "what": "dust bin radii"},
+    )
+    lo_dust: tuple = field(
+        default_factory=lambda: tuple(LO_DUST),
+        metadata={"source": "dust_data_mod.F90:26", "what": "dust bin lower edges"},
+    )
+    up_dust: tuple = field(
+        default_factory=lambda: tuple(UP_DUST),
+        metadata={"source": "dust_data_mod.F90:27", "what": "dust bin upper edges"},
+    )
+    mmd_dust: float = field(
+        default=MMD_DUST, metadata={"source": "fm:313", "what": "Kok median diameter"}
+    )
+    gsd_dust: float = field(
+        default=GSD_DUST, metadata={"source": "fm:314", "what": "Kok geometric spread"}
+    )
+    lambda_dust: float = field(
+        default=LAMBDA, metadata={"source": "fm:315", "what": "Kok length scale"}
+    )
+    cv: float = field(default=CV, metadata={"source": "fm:316", "what": "Kok normalization"})
+    alpha: float = field(
+        default=ALPHA_DEFAULT, metadata={"source": "input.nml:190", "what": "flux scale"}
+    )
+    gamma: float = field(
+        default=GAMMA_DEFAULT, metadata={"source": "input.nml:192", "what": "supply exponent"}
+    )
+    kvhmax: float = field(
+        default=KVHMAX_DEFAULT, metadata={"source": "fm:307", "what": "flux ratio cap"}
+    )
+    moist_opt: int = field(
+        default=MOIST_OPT_DEFAULT,
+        metadata={"source": "fm:468", "what": "moisture formula selector"},
+    )
+    dry_factor: float = field(
+        default=DRY_FACTOR_DEFAULT,
+        metadata={"source": "input.nml:191", "what": "dry threshold factor"},
+    )
+    moist_corr: float = field(
+        default=MOIST_CORR_DEFAULT,
+        metadata={"source": "input.nml:193", "what": "moisture input scale"},
+    )
+    rhow: float = field(default=RHOW, metadata={"source": "fm:514", "what": "water density"})
+    rho_dry: float = field(
+        default=RHO_DRY, metadata={"source": "fm:515", "what": "dry soil density"}
+    )
+    sat_base: float = field(
+        default=SAT_BASE, metadata={"source": "fm:521", "what": "saturation intercept"}
+    )
+    sat_sand: float = field(
+        default=SAT_SAND, metadata={"source": "fm:521", "what": "saturation sand slope"}
+    )
+    fecan_clay_a: float = field(
+        default=FECAN_CLAY_A, metadata={"source": "fm:558", "what": "Fecan clay slope"}
+    )
+    fecan_clay_b: float = field(
+        default=FECAN_CLAY_B, metadata={"source": "fm:558", "what": "Fecan clay intercept"}
+    )
+    fecan_scale: float = field(
+        default=FECAN_SCALE, metadata={"source": "fm:561", "what": "Fecan moisture scale"}
+    )
+    fecan_power: float = field(
+        default=FECAN_POWER, metadata={"source": "fm:561", "what": "Fecan moisture exponent"}
+    )
+    shao_cutoff: float = field(
+        default=SHAO_CUTOFF, metadata={"source": "fm:588", "what": "Shao moisture branch"}
+    )
+    shao_low: float = field(
+        default=SHAO_LOW, metadata={"source": "fm:589", "what": "Shao dry slope"}
+    )
+    shao_high: float = field(
+        default=SHAO_HIGH, metadata={"source": "fm:590", "what": "Shao wet slope"}
+    )
+    shao_offset: float = field(
+        default=SHAO_OFFSET, metadata={"source": "fm:591", "what": "Shao wet offset"}
+    )
+    ratio_cutoff: float = field(
+        default=RATIO_CUTOFF, metadata={"source": "fm:606", "what": "flux ratio clay branch"}
+    )
+    ratio_clay: float = field(
+        default=RATIO_CLAY, metadata={"source": "fm:623", "what": "flux ratio clay slope"}
+    )
+    ratio_offset: float = field(
+        default=RATIO_OFFSET, metadata={"source": "fm:623", "what": "flux ratio offset"}
+    )
+    frozen_temp_k: float = field(
+        default=FROZEN_TEMP_K, metadata={"source": "fm:150", "what": "frozen soil cutoff"}
+    )
+    znt_max: float = field(
+        default=ZNT_MAX, metadata={"source": "fm:138", "what": "roughness cutoff"}
+    )
+    snow_max: float = field(default=SNOW_MAX, metadata={"source": "fm:145", "what": "snow cutoff"})
+    nonerodible_soiltypes: tuple = field(
+        default=NONERODIBLE_SOILTYPES,
+        metadata={"source": "fm:156-162", "what": "masked soil types"},
+    )
+    remap_fine: float = field(
+        default=REMAP_FINE, metadata={"source": "fm:369", "what": "fine tracer remap"}
+    )
+    remap_coarse: float = field(
+        default=REMAP_COARSE, metadata={"source": "fm:370", "what": "coarse tracer remap"}
+    )
+    epsilc: float = field(
+        default=EPSILC,
+        metadata={"source": "rrfs_smoke_config.F90:17", "what": "tracer floor"},
+    )
+    dust_cap: float = field(
+        default=DUST_CAP,
+        metadata={"source": "rrfs_smoke_wrapper.F90:589", "what": "dust tracer cap"},
+    )
+    coarse_pm_cap: float = field(
+        default=COARSE_PM_CAP,
+        metadata={"source": "rrfs_smoke_wrapper.F90:590", "what": "coarse PM tracer cap"},
+    )
+
+    def __post_init__(self):
+        for name in ("reff_dust", "lo_dust", "up_dust"):
+            value = getattr(self, name)
+            if isinstance(value, np.ndarray):
+                value = value.copy()
+                value.setflags(write=False)
+                object.__setattr__(self, name, value)
+
+
+def tunable_names(settings_class):
+    return tuple(item.name for item in fields(settings_class))
+
+
+# ---------------------------------------------------------------------------
+# Kok bin fractions: computed once from bin radii (source_dust, L341-L353)
+# ---------------------------------------------------------------------------
+def kok_bin_fractions(settings=None):
+    """
+    Kok (2011) lognormal partition of the total vertical flux into 5 bins.
+
+    Reproduces source_dust (dust_fengsha_mod.F90, L341-L353). Depends only
+    on fixed bin radii and the Kok constants, so it is evaluated once.
+
+    Returns
+    -------
+    frac : np.ndarray [n_bins]   bin fractions, sum to 1.
+    """
+    settings = RrfsSettings() if settings is None else settings
+    d = 2.0 * np.asarray(settings.reff_dust)
+    dln = np.log(np.asarray(settings.up_dust) / np.asarray(settings.lo_dust))
+    erf = np.vectorize(math.erf)
+    dvol = (
+        (d / settings.cv)
+        * (1.0 + erf(np.log(d / settings.mmd_dust) / (np.sqrt(2.0) * np.log(settings.gsd_dust))))
+        * np.exp(-((d / settings.lambda_dust) ** 3.0))
+        * dln
+    )
+    return dvol / dvol.sum()
+
+
+KOK_FRAC = kok_bin_fractions()  # [n_bins], sums to 1
+
+
+# ---------------------------------------------------------------------------
+# Drag partition  -  fengsha_drag, dust_fengsha_mod.F90 L375-L396
+# ---------------------------------------------------------------------------
+def fengsha_drag(z0):
+    """
+    MacKinnon et al. (2004) drag partition correction R from roughness z0.
+
+    Separate helper for the branch disabled by dust_calcdrag=1 (D:67).
+    R = 1 - ln(z0/z0s) / ln(0.7*(12255/z0s)^0.8).
+
+    Parameters
+    ----------
+    z0 : np.ndarray or float   surface roughness length [m]
+
+    Returns
+    -------
+    R : same shape as z0   drag partition [-]
+    """
+    z0s = 1.0e-4  # L379  ideal bare-surface roughness [m]
+    return 1.0 - np.log(z0 / z0s) / np.log(0.7 * (12255.0 / z0s) ** 0.8)
+
+
+# ---------------------------------------------------------------------------
+# Soil-moisture helpers
+# ---------------------------------------------------------------------------
+def soil_moisture_vol2grav(vsoil, sandfrac, settings=None):
+    """
+    Volumetric -> gravimetric soil moisture (percent).
+    soilMoistureConvertVol2Grav, L494-L527.
+
+        vsat = 0.489 - 0.126 * sand
+        grav = 100 * (vsoil * rhow / rho_dry / (1 - vsat))
+    """
+    settings = RrfsSettings() if settings is None else settings
+    vsat = settings.sat_base - settings.sat_sand * sandfrac
+    return 100.0 * (vsoil * settings.rhow / settings.rho_dry / (1.0 - vsat))
+
+
+def moisture_correction_fecan(slc, sand, clay, settings=None):
+    """
+    Fecan et al. (1999) threshold correction. moistureCorrectionFecan, L529-L563.
+
+        drylimit = dry_factor * clay * (14*clay + 17)
+        h = sqrt(1 + 1.21 * max(0, grav_soil - drylimit)^0.68)
+    """
+    settings = RrfsSettings() if settings is None else settings
+    grvsoilm = soil_moisture_vol2grav(slc, sand, settings)
+    drylimit = settings.dry_factor * clay * (settings.fecan_clay_a * clay + settings.fecan_clay_b)
+    return np.sqrt(
+        1.0 + settings.fecan_scale * np.maximum(0.0, grvsoilm - drylimit) ** settings.fecan_power
+    )
+
+
+def moisture_correction_shao(slc, settings=None):
+    """
+    Shao threshold correction. moistureCorrectionShao, L565-L594.
+
+        h = exp(22.7*slc)          if slc < 0.03
+            exp(95.3*slc - 2.029)  otherwise
+    """
+    settings = RrfsSettings() if settings is None else settings
+    return np.where(
+        slc < settings.shao_cutoff,
+        np.exp(settings.shao_low * slc),
+        np.exp(settings.shao_high * slc - settings.shao_offset),
+    )
+
+
+def threshold_from_soiltype(isltyp):
+    """
+    Look up dry threshold velocity from UTHRES_TABLE by soil type.
+
+    Convenience for box-model sweeps over soil texture. Assumes 1-based USDA
+    indexing into the 13-entry table; see the UTHRES_TABLE caveat. Indices
+    outside 1..13 map to the nonerodible sentinel (9999.0).
+
+    Parameters
+    ----------
+    isltyp : np.ndarray [x, y]   integer soil type (1-based)
+
+    Returns
+    -------
+    uthrs : np.ndarray [x, y]   dry threshold friction velocity [m/s]
+    """
+    idx = np.asarray(isltyp, dtype=int) - 1
+    valid = (idx >= 0) & (idx < len(UTHRES_TABLE))
+    safe = np.where(valid, idx, len(UTHRES_TABLE) - 1)
+    return np.where(valid, UTHRES_TABLE[safe], UTHRES_TABLE[-1])
+
+
+# ---------------------------------------------------------------------------
+# Vertical-to-horizontal flux ratio  -  DustFluxV2HRatioMB95, L596-L626
+# ---------------------------------------------------------------------------
+def flux_ratio_mb95(clay, settings=None):
+    """
+    Marticorena & Bergametti (1995) vertical-to-horizontal flux ratio.
+
+        kvh = kvhmax                if clay > 0.2
+              10^(13.4*clay - 6.0)  otherwise
+    """
+    settings = RrfsSettings() if settings is None else settings
+    return np.where(
+        clay > settings.ratio_cutoff,
+        settings.kvhmax,
+        10.0 ** (settings.ratio_clay * clay - settings.ratio_offset),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Initialization: load static external datasets once at model start
+# ---------------------------------------------------------------------------
+def initialize(isltyp_file):
+    """
+    Load the static soil type. Monthly soil fields are supplied on each call.
+
+    Returns
+    -------
+    isltyp : np.ndarray [x, y]
+    """
+    return np.load(isltyp_file)
+
+
+def _calculated_cells(isltyp, stemp, znt, snowh, xland, rdrag, settings=None):
+    """Cells reaching source_dust (land F:99; soil F:156-162; drag F:174)."""
+    # For rdrag <= 0 (F:174), q is zero without the gate, so the flux does not
+    # change. The gate still matters: skipped cells get no tracer remap (F:369-370).
+    settings = RrfsSettings() if settings is None else settings
+    return (
+        (np.asarray(xland) < 1.5)
+        & (np.asarray(znt) <= settings.znt_max)
+        & (np.asarray(snowh) <= settings.snow_max)
+        & (np.asarray(stemp) >= settings.frozen_temp_k)
+        & ~np.isin(isltyp, settings.nonerodible_soiltypes)
+        & (np.asarray(rdrag) > 0.0)
+    )
+
+
+# ---------------------------------------------------------------------------
+# Core parameterization: called at every model time step
+# ---------------------------------------------------------------------------
+def dust_emission(
+    ustar,
+    slc,
+    rho_a,
+    clay,
+    sand,
+    ssm,
+    rdrag,
+    uthrs,
+    isltyp,
+    stemp,
+    znt,
+    snowh,
+    xland,
+    settings=None,
+):
+    """
+    Compute FENGSHA (RRFS-SD) dust emission flux.
+
+    Faithful transcription of DustEmissionFENGSHA (L398-L492) for the total
+    vertical flux, then the Kok 5-bin split (source_dust, L341-L353).
+
+    Parameters
+    ----------
+    ustar  : np.ndarray [x, y]   friction velocity [m/s]
+    slc    : np.ndarray [x, y]   volumetric soil moisture, layer 2 [-] (F:182)
+    rho_a  : np.ndarray [x, y]   near-surface air density [kg/m^3]
+    clay   : np.ndarray [x, y]   clay fraction [-]
+    sand   : np.ndarray [x, y]   sand fraction [-]
+    ssm    : np.ndarray [x, y]   sediment supply / erosion map [-]
+    rdrag  : np.ndarray [x, y]   drag partition R [-]; skip <= 0 (F:174)
+    uthrs  : np.ndarray [x, y]   dry threshold friction velocity [m/s]
+    isltyp : np.ndarray [x, y]   integer soil type (F:156-162 mask)
+    stemp  : np.ndarray [x, y]   layer-1 soil temperature [K]
+    znt, snowh, xland : np.ndarray [x, y]  roughness, snow height, land type
+    alpha, gamma, kvhmax, moist_opt, dry_factor, moist_corr : see module docstring
+
+    Returns
+    -------
+    F_p : np.ndarray [x, y, n_bins]   dust emission flux [kg m^-2 s^-1]
+    """
+    settings = RrfsSettings() if settings is None else settings
+    ustar = np.asarray(ustar, dtype=float)
+    mask = _calculated_cells(isltyp, stemp, znt, snowh, xland, rdrag, settings)
+    slc_eff = settings.moist_corr * np.asarray(slc, dtype=float)  # F:182, soil layer 2
+    for name, value in [("clay", clay), ("sand", sand), ("ssm", ssm)]:
+        if np.any(mask & ((np.asarray(value) < 0) | (np.asarray(value) > 1))):
+            warnings.warn(f"{name} outside [0, 1]", FengshaRRFSWarning, stacklevel=2)
+    if np.any(mask & ((np.asarray(clay) + np.asarray(sand)) > 1)):
+        warnings.warn("computed silt is negative", FengshaRRFSWarning, stacklevel=2)
+    if np.any(mask & (np.asarray(settings.alpha) < 0)):
+        warnings.warn(
+            "negative alpha gives negative source before clamp", FengshaRRFSWarning, stacklevel=2
+        )
+
+    # --- moisture threshold correction h -----------------------------------
+    if settings.moist_opt == 1:
+        h = moisture_correction_fecan(slc_eff, sand, clay, settings)
+    else:
+        h = moisture_correction_shao(slc_eff, settings)
+
+    # --- horizontal saltation flux q (Webb 2020 Eq. 9, F:485) ---------------
+    rustar = rdrag * ustar
+    u_thresh = uthrs * h
+    u_sum = rustar + u_thresh
+    q = np.maximum(0.0, rustar - u_thresh) * u_sum * u_sum
+
+    # --- total vertical flux (L457-L489) -----------------------------------
+    kvh = flux_ratio_mb95(clay, settings)
+    F_total = (settings.alpha / GRAV) * (ssm**settings.gamma) * rho_a * kvh * q  # [kg m^-2 s^-1]
+
+    # --- erodibility / state masks -----------------------------------------
+    F_total = np.where(mask, F_total, 0.0)
+
+    # --- Kok 5-bin split ---------------------------------------------------
+    F_p = np.maximum(
+        0.0, F_total[:, :, np.newaxis] * kok_bin_fractions(settings)[np.newaxis, np.newaxis, :]
+    )
+    return F_p  # [x, y, n_bins]
+
+
+class FengshaRRFSResult(NamedTuple):
+    rate: np.ndarray
+    bems: np.ndarray
+    dust: np.ndarray
+    emis_dust: np.ndarray
+
+
+def fengsha_rrfs_driver(
+    ustar,
+    slc,
+    clay,
+    sand,
+    ssm,
+    rdrag,
+    uthrs,
+    isltyp,
+    stemp,
+    znt,
+    snowh,
+    xland,
+    p,
+    temperature,
+    p8w1,
+    p8w2,
+    area,
+    dt,
+    dust,
+    settings=None,
+):
+    """Port F:23-372 and W:617-618,889 for surface [x,y] cells.
+
+    ``dust`` is the initial five tracer values in ug/kg. In active cells
+    the source updates kg/kg, applies the RRFS remap, then converts back.
+    """
+    settings = RrfsSettings() if settings is None else settings
+    rho_a = np.asarray(p) / (CON_RD * np.asarray(temperature))  # W:889
+    rate = dust_emission(
+        ustar, slc, rho_a, clay, sand, ssm, rdrag, uthrs, isltyp, stemp, znt, snowh, xland, settings
+    )
+    bems = rate * 1.0e9  # F:366
+    airmas = -(np.asarray(p8w2) - np.asarray(p8w1)) * np.asarray(area) / GRAV  # F:116
+    active = _calculated_cells(isltyp, stemp, znt, snowh, xland, rdrag, settings)
+    initial = np.asarray(dust, dtype=float)
+    tc = initial * 1.0e-9 + rate * np.asarray(area)[..., None] * dt / airmas[..., None]
+    remapped = tc.copy()
+    remapped[..., 0] = tc[..., 0] + settings.remap_fine * tc[..., 1]  # F:369
+    remapped[..., 4] = settings.remap_coarse * tc[..., 1] + tc[..., 2] + tc[..., 3]  # F:370
+    updated = np.where(active[..., None], remapped * 1.0e9, initial)
+    return FengshaRRFSResult(rate, bems, updated, bems[..., :4].sum(axis=-1))  # W:617-618
+
+
+DUST12M_FIELDS = ("clay", "rdrag", "sand", "ssm", "uthrs")  # W:818-822 order
+
+
+def select_month(dust12m, month):
+    """Pick one month of the RRFS dust input, as the wrapper does.
+
+    ``dust12m`` has shape [x, y, 12, 5]: 12 months of clay, drag, sand,
+    ssm and threshold (W:818-822, ``.meta`` 593-600). ``month`` is the
+    calendar month 1-12, ``jdate(2)`` in the wrapper (W:298).
+    """
+    month = int(month)
+    if not 1 <= month <= 12:
+        # The Fortran has no check here; a month outside 1-12 indexes past the array.
+        raise ValueError(f"month must be 1-12, got {month}")
+    data = np.asarray(dust12m, dtype=float)
+    if data.shape[-2:] != (12, 5):
+        raise ValueError(f"dust12m must end with shape (12, 5), got {data.shape}")
+    return {name: data[..., month - 1, k] for k, name in enumerate(DUST12M_FIELDS)}
+
+
+def fengsha_rrfs_monthly_driver(dust12m, month, **inputs):
+    """Run ``fengsha_rrfs_driver`` with the soil fields of one month (W:298, W:818-822)."""
+    return fengsha_rrfs_driver(**select_month(dust12m, month), **inputs)
+
+
+class RrfsStepResult(NamedTuple):
+    rate: np.ndarray
+    bems: np.ndarray
+    dust: np.ndarray  # RRFS dust tracer (gq0 ntdust) [ug/kg], capped
+    coarse_pm: np.ndarray  # RRFS coarse PM tracer (gq0 ntcoarsepm) [ug/kg], capped
+    emis_dust: np.ndarray
+
+
+def rrfs_dust_step(
+    dust12m,
+    month,
+    zorl,
+    snow,
+    land,
+    smc,
+    tslb,
+    pr3d,
+    prl3d,
+    tk3d,
+    ustar,
+    garea,
+    soiltyp,
+    dt,
+    dust,
+    coarse_pm,
+    settings=None,
+):
+    """Run one RRFS dust step from host arrays, using the wrapper's input map.
+
+    Soil and air layers are on the last axis. ``dust`` and ``coarse_pm`` are the
+    two RRFS tracers (``gq0`` at ``ntdust`` and ``ntcoarsepm``) in ug/kg. They
+    become the five bins as in W:796,1066-1067 (bins 1 and 5 floored at epsilc,
+    bins 2-4 zero). After the step the two tracers return with the floor and
+    caps of W:589-590.
+    """
+    settings = RrfsSettings() if settings is None else settings
+    soil = select_month(dust12m, month)  # W:298,818-822
+    dust = np.asarray(dust, dtype=float)
+    coarse_pm = np.asarray(coarse_pm, dtype=float)
+    bins = np.zeros(dust.shape + (N_BINS,))  # W:796 chem = 0
+    bins[..., 0] = np.maximum(settings.epsilc, dust)  # W:1066
+    bins[..., 4] = np.maximum(settings.epsilc, coarse_pm)  # W:1067, p_dust_5 = p_coarse_pm
+    out = fengsha_rrfs_driver(
+        **soil,
+        ustar=ustar,
+        slc=np.asarray(smc)[..., 1],
+        stemp=np.asarray(tslb)[..., 0],
+        znt=np.asarray(zorl) * 0.01,  # W:814
+        snowh=np.asarray(snow) * 0.001,
+        xland=np.asarray(land, dtype=float),  # W:810,817
+        p8w1=np.asarray(pr3d)[..., 0],
+        p8w2=np.asarray(pr3d)[..., 1],
+        p=np.asarray(prl3d)[..., 0],
+        temperature=np.asarray(tk3d)[..., 0],
+        area=garea,
+        isltyp=soiltyp,
+        dt=dt,
+        dust=bins,
+        settings=settings,
+    )
+    new_dust = np.minimum(settings.dust_cap, np.maximum(settings.epsilc, out.dust[..., 0]))  # W:589
+    new_coarse = np.minimum(
+        settings.coarse_pm_cap, np.maximum(settings.epsilc, out.dust[..., 4])
+    )  # W:590
+    return RrfsStepResult(out.rate, out.bems, new_dust, new_coarse, out.emis_dust)
+
+
+# ---------------------------------------------------------------------------
+# Box-model demo   -   run: python dust_fengsha_rrfs.py
+# ---------------------------------------------------------------------------

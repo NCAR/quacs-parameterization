@@ -1,94 +1,114 @@
-# GOCART dust emission (Ginoux et al., 2001)
+# GOCART dust emission (Ginoux et al., 2001, WRF-Chem dust_opt=1)
 
 | | |
 |---|---|
 | **Status** | implemented |
 | **Target class** | Dust Emission Scheme |
-| **Contributors** | [chayanroyc](https://github.com/chayanroyc) |
-| **Original source** | [MPAS-GOCART2G](https://github.com/PACE-DAAQ/MPAS-GOCART2G): `DU2G_GridCompMod.F90` (`DustEmissionGOCART2G_revised`) and `DU2G_instance.F90` |
+| **Contributors** | Chayan Roychoudhury |
+| **Original source** | WRF-Chem `chem/module_gocart_dust.F` (`source_du`, `gocart_dust_driver`) and `phys/module_data_gocart_dust.F`, [wrf-model/WRF](https://github.com/wrf-model/WRF), tag v4.8.0, commit `06d4240ae989cc3e50af412bb472df3d9048783c` |
 
-This scheme computes the vertical flux of mineral dust from the surface in 5 size bins.
-The flux increases with the cube of the 10-m wind speed above a threshold.
-Soil moisture increases the threshold. The scheme sets the flux to zero over water, over lakes, and on wet soil.
+This scheme computes the vertical flux of mineral dust in 5 size bins.
+It follows the GOCART emission of WRF-Chem (`dust_opt=1`).
+The flux grows with the 10-m wind speed squared times the excess over a threshold wind speed. A source erodibility map scales it.
+The threshold depends on particle size, air density and soil wetness.
+Wet soil (saturation fraction 0.5 or more) gets a threshold of 100 m s-1, so it emits nothing.
+
+Checked against the compiled pinned Fortran: 3046 test cases, no differences at 8-byte precision.
 
 ## Target parameterization template
 
 | Field | Value |
 |---|---|
-| Research area | Emissions, aerosols, dust storms, radiative impacts |
-| Scheme specifics | GOCART dust emission scheme (Ginoux et al., 2001), as in GOCART-2G. Dry-soil threshold from Marticorena & Bergametti (1995). |
-| External datasets | Erodibility `S`, land-water mask `oro`, lake fraction `frlake`, and the scale factor for each bin `s_p`. These are static fields that must be mapped to the MPAS grid. |
-| Information from MPAS-A | 10-m wind speed `w10m`, soil moisture `gwet`, near-surface air density `rhoa` |
-| Other inputs | Empirical constant `C` (set in the script or in a namelist). Particle radius and density for each bin. |
-| Information to MPAS-A | Dust emission flux `F_p` [x, y, dust bin]. The host model adds it to the dust concentrations. |
-| Considerations | The dust species must be in MPAS-A and mapped to its dust bins, or MICM must add them. Dust has dry deposition. Heterogeneous reactions on dust change ozone. |
+| Research area | Emissions, aerosols, dust storms |
+| Scheme specifics | GOCART dust emission of WRF-Chem v4.8.0 (`dust_opt=1`), after Ginoux et al. (2001). The flux is `C * s_p * S * u10^2 * (u10 - u_t)` for each of 5 bins. The threshold `u_t` depends on size and has a soil-moisture correction. There is no lake term. |
+| External datasets | Erodibility `erod` for 3 soil classes (sand, silt, clay). It is a static field. Map it to the MPAS grid. Soil porosity by USGS soil type is a table in the code (used by `compute_gwet`). |
+| Information from MPAS-A | 10-m wind speed, soil moisture of the top layer, air density at the surface, land mask |
+| Other inputs | Dry threshold wind speed `u_t` per bin from `threshold_velocity()`. Bin radii, bin densities, bin source fractions and the monthly coefficient table `ch_dust` are in the settings object. |
+| Information to MPAS-A | Dust emission flux in 5 bins. Add it to the dust species of the host model. |
+| Considerations | Map the 5 bins to the dust species or bins of the host model. WRF fixes the month of `ch_dust` at the start of the run. The code uses `g = 9.81`. |
 
 ## Classification
 
 | Dimension | Value |
 |---|---|
 | Complexity | simple |
-| Solving strategy | supplies rates to the solver (emission rate `F_p / dz`) |
-| Aerosol representation | sectional (5 dust bins) |
-| Grid | 0-D (surface cell) |
-| Interdependence | standalone |
+| Solving strategy | supplies rates to the solver |
+| Aerosol representation | sectional (5 bins) |
+| Grid | 0-D |
+| Interdependence | standalone (needs `u_t` from `threshold_velocity()` of this scheme and the erodibility map) |
 
 ## Inputs
 
 Source is one of: MPAS-A, external dataset, constant, other parameterization.
+These are the arguments of `ginoux_dust_driver`, the WRF driver of the scheme. It takes the lowest air level and the top soil layer.
 
-Inputs of `dust_emission(w10m, u_t, gwet, oro, frlake, S, s_p, C)`:
-
-| Name | Description | Units | Shape | Source |
-|---|---|---|---|---|
-| `w10m` | 10-m wind speed | m s-1 | `(x, y)` | MPAS-A |
-| `u_t` | Dry-soil threshold wind speed, from `threshold_velocity` | m s-1 | `(x, y)` or scalar | other parameterization (`threshold_velocity`) |
-| `gwet` | Gravimetric soil moisture, in [0, 1] | 1 | `(x, y)` | MPAS-A |
-| `oro` | Land-water mask (1.0 = land) | 1 | `(x, y)` | external dataset |
-| `frlake` | Lake fraction, in [0, 1] | 1 | `(x, y)` | external dataset |
-| `S` | Source erodibility, in [0, 1] | 1 | `(x, y)` | external dataset |
-| `s_p` | Scale factor for each bin (default `SP_DEFAULT`) | 1 | `(n_bins,)` | external dataset |
-| `C` | Empirical scale constant (default `C_DEFAULT = 0.088`) | kg s2 m-5 | scalar | constant |
-
-Inputs of `threshold_velocity(radius, rhop, rhoa)`:
+It sets three inputs of `dust_emission`. The wind speed comes from `u10` and `v10`. If the layer is thinner than 12 m, it comes from `u_phy` and `v_phy`. The threshold wind speed comes from `rho_phy`. The value `gwet` is `smois` over the porosity of the soil type `isltyp`.
 
 | Name | Description | Units | Shape | Source |
 |---|---|---|---|---|
-| `radius` | Effective particle radius for each bin (default `RADIUS_DEFAULT`) | m | `(n_bins,)` | constant |
-| `rhop` | Particle density for each bin (default `RHOP_DEFAULT`) | kg m-3 | `(n_bins,)` | constant |
-| `rhoa` | Near-surface air density | kg m-3 | `(x, y)` | MPAS-A |
+| `dust` | Dust tracers, 5 bins, all levels | ug kg-1 | `(x, level, y, 5)` | MPAS-A |
+| `rho_phy` | Air density (the code reads level 1) | kg m-3 | `(x, level, y)` | MPAS-A |
+| `dz8w` | Layer thickness (the code reads level 1) | m | `(x, level, y)` | MPAS-A |
+| `dt` | Time step | s | scalar | MPAS-A |
+| `u10` | 10-m wind, west-east component | m s-1 | `(x, y)` | MPAS-A |
+| `v10` | 10-m wind, south-north component | m s-1 | `(x, y)` | MPAS-A |
+| `u_phy` | Model wind, west-east component (the code reads level 1 if `dz8w` < 12 m) | m s-1 | `(x, level, y)` | MPAS-A |
+| `v_phy` | Model wind, south-north component (the code reads level 1 if `dz8w` < 12 m) | m s-1 | `(x, level, y)` | MPAS-A |
+| `smois` | Volumetric soil moisture (the code reads soil layer 1) | m3 m-3 | `(x, soil layer, y)` | MPAS-A |
+| `isltyp` | USGS soil type, integer 1 to 19 (selects the porosity) | 1 | `(x, y)` | external dataset |
+| `oro` | Land mask (land if `oro < 1.5`) | 1 | `(x, y)` | MPAS-A |
+| `erod` | Erodibility for sand, silt, clay | 1 | `(x, y, 3)` | external dataset |
+| `emis_dust` | Accumulated emitted dust per bin | kg m-2 | `(x, y, 5)` | MPAS-A |
+| `dustin` | Dust tracers handed to other chemistry (used if `chem_opt` is 2 or 11) | ug kg-1 | `(x, y, 5)` | MPAS-A |
+| `chem_opt` | WRF chemistry option. 2 and 11 write the update to `dustin`. Default 0. | 1 | scalar | constant |
+| `month` | Month that selects the column of `ch_dust` (1 to 12). Default 1. | 1 | scalar | MPAS-A |
+| `settings` | Tunable source coefficients. See `tunable_names(GinouxSettings)`. | - | - | constant |
 
 ## Outputs
 
 Destination is one of: MPAS-A state, MICM rate parameter, diagnostic.
+These are the keys of the dict that `ginoux_dust_driver` returns. Sea cells keep their starting values.
 
 | Name | Description | Units | Shape | Destination |
 |---|---|---|---|---|
-| `F_p` | Dust emission flux for each bin, from `dust_emission` | kg m-2 s-1 | `(x, y, n_bins)` | MPAS-A state (tendency `F_p / (rho_air dz)`) |
-| `u_t` | Dry-soil threshold wind speed, from `threshold_velocity` | m s-1 | `(x, y, n_bins)` | diagnostic |
-| `EMIS.dust_emis_bin_i` | Emission rate for each bin, from `emission_rates` (`F_p / dz`) | kg m-3 s-1 | `(1,)` for each bin | MICM rate parameter |
+| `flux` | Dust emission flux per bin | kg m-2 s-1 | `(x, y, 5)` | MICM rate parameter |
+| `dust` | Dust tracers after the emission (all levels kept, unchanged if `chem_opt` is 2 or 11) | ug kg-1 | `(x, level, y, 5)` | MPAS-A state |
+| `dustin` | Updated lowest-level tracers if `chem_opt` is 2 or 11 | ug kg-1 | `(x, y, 5)` | MPAS-A state |
+| `emis_dust` | Accumulated emitted dust per bin | kg m-2 | `(x, y, 5)` | diagnostic |
+
+The tendency of the lowest layer is dC/dt = flux / (rho_air * dz).
 
 ## Usage
 
 ```python
 import numpy as np
-from quacs.dust.ginoux import LAND, SP_DEFAULT, dust_emission
+from quacs.dust.ginoux import ginoux_dust_driver
 
-F_p = dust_emission(
-    w10m=np.array([[12.0]]),
-    u_t=np.array([[6.0]]),
-    gwet=np.array([[0.1]]),
-    oro=np.array([[LAND]]),
-    frlake=np.array([[0.0]]),
-    S=np.array([[0.5]]),
-    s_p=SP_DEFAULT,
+one = np.ones((1, 1))
+level = np.ones((1, 1, 1))
+out = ginoux_dust_driver(
+    dust=np.zeros((1, 1, 1, 5)),
+    rho_phy=1.2 * level,
+    dz8w=10.0 * level,
+    dt=60.0,
+    u10=12.0 * one,
+    v10=0.0 * one,
+    u_phy=12.0 * level,
+    v_phy=0.0 * level,
+    smois=0.034 * level,
+    isltyp=np.array([[1]]),
+    oro=one,
+    erod=np.full((1, 1, 3), 0.5),
+    emis_dust=np.zeros((1, 1, 5)),
+    dustin=np.zeros((1, 1, 5)),
 )
+flux = out["flux"]  # kg m-2 s-1, shape (1, 1, 5)
 ```
 
 | Example | What it does |
 |---|---|
-| `examples/musica_box_model.py` | Runs the scheme in a MUSICA box model and compares the result with the closed-form solution |
-| `examples/ginoux_box_model.ipynb` | Runs the box model and plots the dust mass for each bin and the flux as a function of wind speed |
+| `examples/numpy_box_model.py` | Prints the bin thresholds and steps one cell forward with NumPy |
+| `examples/musica_box_model.py` | Adds the 5 bin fluxes to a MUSICA MICM box model as emission rates |
 
 ## Tests
 
@@ -98,5 +118,4 @@ pytest quacs/dust/ginoux
 
 ## References
 
-- Ginoux, P., et al. (2001). Sources and distributions of dust aerosols simulated with the GOCART model. J. Geophys. Res., 106, 20255-20273. https://doi.org/10.1029/2000JD000053
-- Marticorena, B. and Bergametti, G. (1995). Modeling the atmospheric dust cycle: 1. Design of a soil-derived dust emission scheme. J. Geophys. Res., 100, 16415-16430. https://doi.org/10.1029/95JD00690
+- Ginoux, P., et al. (2001). Sources and distributions of dust aerosols simulated with the GOCART model. J. Geophys. Res.-Atmos., 106, 20255-20273. https://doi.org/10.1029/2000JD000053

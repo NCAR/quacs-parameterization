@@ -1,38 +1,21 @@
-"""
-GOCART dust emission scheme (Ginoux et al., 2001), as in MPAS-GOCART2G.
+"""GOCART-Ginoux dust emission. See README.md for inputs and outputs."""
 
->>> from quacs.dust.ginoux import dust_emission, threshold_velocity, SP_DEFAULT
->>> from quacs.dust.ginoux import run_box_model
-"""
-
-from .box_model import build_mechanism, emission_rates, run_box_model
 from .ginoux import (
-    C_DEFAULT,
-    GRAV,
-    LAND,
-    RADIUS_DEFAULT,
-    RADIUS_LOWER,
-    RADIUS_UPPER,
-    RHOP_DEFAULT,
-    SP_DEFAULT,
+    GinouxSettings,
+    compute_gwet,
     dust_emission,
+    ginoux_dust_driver,
     initialize,
     threshold_velocity,
+    tunable_names,
 )
 
 __all__ = [
-    "C_DEFAULT",
-    "GRAV",
-    "LAND",
-    "RADIUS_DEFAULT",
-    "RADIUS_LOWER",
-    "RADIUS_UPPER",
-    "RHOP_DEFAULT",
-    "SP_DEFAULT",
+    "GinouxSettings",
+    "compute_gwet",
     "dust_emission",
+    "ginoux_dust_driver",
     "initialize",
     "threshold_velocity",
-    "build_mechanism",
-    "emission_rates",
-    "run_box_model",
+    "tunable_names",
 ]

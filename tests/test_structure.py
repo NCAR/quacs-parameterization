@@ -3,7 +3,7 @@
 import re
 
 import pytest
-from repo_layout import REPO_ROOT, process_dirs, scheme_dirs
+from repo_layout import PACKAGE_ROOT, REPO_ROOT, process_dirs, scheme_dirs
 
 REQUIRED_SECTIONS = [
     "## Target parameterization template",
@@ -51,7 +51,6 @@ def test_scheme_with_code_has_tests_or_examples(scheme):
     if status is None or status.group(1) == "placeholder":
         pytest.skip("placeholder scheme")
     has_tests = any((scheme / "tests").glob("test_*.py"))
-    has_examples = any((scheme / "examples").glob("*.py")) or any(
-        (scheme / "examples").glob("*.ipynb")
-    )
+    notebooks = REPO_ROOT / "examples" / scheme.relative_to(PACKAGE_ROOT)
+    has_examples = any((scheme / "examples").glob("*.py")) or any(notebooks.glob("*.ipynb"))
     assert has_tests or has_examples, f"{_rel(scheme)} has no tests and no examples"

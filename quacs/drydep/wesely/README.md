@@ -102,7 +102,7 @@ print(out["Vd"], out["k"])
 |---|---|
 | `examples/box_model.py` | Prints the O3 resistances, runs the exponential-decay box model for 8 species, and prints the O3 resistances for each land type |
 | `examples/musica_box_model.py` | Gives k = Vd / H to a MUSICA MICM box model and checks the result against the exact solution |
-| `examples/wesely_drydep.ipynb` | Plots the concentration decay, Vd and resistances by species, O3 Vd by land type, and the O3 seasonal cycle |
+| `examples/drydep/wesely/wesely_drydep.ipynb` | Plots the concentration decay, Vd and resistances by species, O3 Vd by land type, and the O3 seasonal cycle |
 
 ## Tests
 

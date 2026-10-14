@@ -31,7 +31,7 @@ where = ["."]
 include = ["quacs*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "quacs"]
+testpaths = ["tests", "quacs", "examples"]
 addopts = "--nbmake"
 
 [tool.ruff]
@@ -39,11 +39,11 @@ line-length = 100
 target-version = "py39"
 # These notebooks are the scientists' originals. Only their import lines and kernel are changed.
 extend-exclude = [
-    "quacs/drydep/wesely/examples/wesely_gas_drydep_SM.ipynb",
-    "quacs/dust/ginoux/examples/musica_dust_ginoux_box_model.ipynb",
-    "quacs/plumerise/freitas_pyrocb/examples/single_column_workflow_steps_original.ipynb",
-    "quacs/tagged_tracers/voc_nox/examples/ex_tagged_co_musica_transport_core.ipynb",
-    "quacs/vsls/cesm2_slh/examples/run_vsls_seasalt_original.ipynb",
+    "examples/drydep/wesely/wesely_gas_drydep_SM.ipynb",
+    "examples/dust/ginoux/musica_dust_ginoux_box_model.ipynb",
+    "examples/plumerise/freitas_pyrocb/single_column_workflow_steps_original.ipynb",
+    "examples/tagged_tracers/voc_nox/ex_tagged_co_musica_transport_core.ipynb",
+    "examples/vsls/cesm2_slh/run_vsls_seasalt_original.ipynb",
 ]
 
 [tool.ruff.lint]

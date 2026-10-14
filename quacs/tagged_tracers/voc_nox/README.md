@@ -106,7 +106,7 @@ co_hist, co_tracer_hist = run_source_receptor(
 | Example | What it does |
 |---|---|
 | `examples/tagged_co_transport.py` | Runs the source-receptor case and checks that `CO_tracer` gets to the receptor |
-| `examples/tagged_co_transport.ipynb` | Runs the same case and plots the tracer in space and time |
+| `examples/tagged_tracers/voc_nox/tagged_co_transport.ipynb` | Runs the same case and plots the tracer in space and time |
 
 ## Tests
 

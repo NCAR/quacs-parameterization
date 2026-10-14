@@ -1,11 +1,14 @@
 # quacs-parameterization
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/NCAR/quacs-parameterization/HEAD?urlpath=lab/tree/examples)
+
 This repository collects the target parameterizations for the QUACS project.
 QUACS adds a scripting capability for chemistry and aerosol parameterizations to MUSICA and MPAS-A.
 The parameterizations here guide the design of that capability.
 
 Each parameterization has a README that tells its inputs, its outputs, and where each one comes from or goes to.
 Most parameterizations also run in a MUSICA box model.
+The Binder badge above launches JupyterLab in the browser, where you can run any notebook in the top-level `examples/` folder without installing anything.
 
 ## Layout
 
@@ -19,8 +22,10 @@ quacs/
     └── <scheme>/
         ├── README.md      # status, inputs, outputs, references
         ├── <scheme>.py    # the physics
-        ├── examples/      # MUSICA box model scripts and notebooks
+        ├── examples/      # MUSICA box model scripts
         └── tests/
+examples/
+└── <process>/<scheme>/    # notebooks that run the scheme
 ```
 
 ## Target parameterizations

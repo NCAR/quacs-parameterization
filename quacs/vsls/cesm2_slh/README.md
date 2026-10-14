@@ -132,7 +132,7 @@ mechanism, species = build_mechanism()
 | Example | What it does |
 |---|---|
 | `examples/musica_seasalt_box_model.py` | Runs the 3 reactions in one marine cell for 24 h with MICM and compares the result with the analytic solution |
-| `examples/run_vsls_seasalt.ipynb` | Plots the rate constants and the MICM box model result |
+| `examples/vsls/cesm2_slh/run_vsls_seasalt.ipynb` | Plots the rate constants and the MICM box model result |
 
 ## Tests
 

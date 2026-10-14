@@ -105,7 +105,7 @@ layer_fraction = compute_wildfire_profile_fraction_driver(
 | Example | What it does |
 |---|---|
 | `examples/run_single_column_workflow.py` | Runs the outer driver for one synthetic sounding and prints `layer_fraction` |
-| `examples/single_column_workflow_steps.ipynb` | Runs each step one at a time and checks that the result agrees with the outer driver |
+| `examples/plumerise/freitas_pyrocb/single_column_workflow_steps.ipynb` | Runs each step one at a time and checks that the result agrees with the outer driver |
 
 The `diagrams/` folder holds the workflow diagram as a draw.io file and a PNG.
 

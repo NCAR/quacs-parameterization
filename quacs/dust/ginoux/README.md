@@ -88,7 +88,7 @@ F_p = dust_emission(
 | Example | What it does |
 |---|---|
 | `examples/musica_box_model.py` | Runs the scheme in a MUSICA box model and compares the result with the closed-form solution |
-| `examples/ginoux_box_model.ipynb` | Runs the box model and plots the dust mass for each bin and the flux as a function of wind speed |
+| `examples/dust/ginoux/ginoux_box_model.ipynb` | Runs the box model and plots the dust mass for each bin and the flux as a function of wind speed |
 
 ## Tests
 
